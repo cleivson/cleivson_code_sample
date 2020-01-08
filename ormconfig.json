@@ -1,0 +1,30 @@
+[
+  {
+    "type": "mysql",
+    "host": "localhost",
+    "port": 3306,
+    "logger": "debug",
+    "username": "root",
+    "password": "adminpwd",
+    "database": "toptal",
+    "entities": [
+      "dist/**/*.entity{.ts,.js}"
+    ],
+    "synchronize": true
+  },
+  {
+    "name": "test",
+    "type": "mysql",
+    "host": "localhost",
+    "port": 3306,
+    "logger": "debug",
+    "username": "root",
+    "password": "adminpwd",
+    "database": "toptal-test",
+    "entities": [
+      "dist/**/*.entity{.ts,.js}"
+    ],
+    "dropSchema": true,
+    "synchronize": true
+  }
+]
