@@ -1,0 +1,1 @@
+export const CONFIG_FILE_PATH = 'CONFIG_FILE_PATH';
