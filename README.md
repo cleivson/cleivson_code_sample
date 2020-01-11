@@ -1,40 +1,29 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo_text.svg" width="320" alt="Nest Logo" /></a>
-</p>
-
-[travis-image]: https://api.travis-ci.org/nestjs/nest.svg?branch=master
-[travis-url]: https://travis-ci.org/nestjs/nest
-[linux-image]: https://img.shields.io/travis/nestjs/nest/master.svg?label=linux
-[linux-url]: https://travis-ci.org/nestjs/nest
-  
-  <p align="center">A progressive <a href="http://nodejs.org" target="blank">Node.js</a> framework for building efficient and scalable server-side applications, heavily inspired by <a href="https://angular.io" target="blank">Angular</a>.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore"><img src="https://img.shields.io/npm/dm/@nestjs/core.svg" alt="NPM Downloads" /></a>
-<a href="https://travis-ci.org/nestjs/nest"><img src="https://api.travis-ci.org/nestjs/nest.svg?branch=master" alt="Travis" /></a>
-<a href="https://travis-ci.org/nestjs/nest"><img src="https://img.shields.io/travis/nestjs/nest/master.svg?label=linux" alt="Linux" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#5" alt="Coverage" /></a>
-<a href="https://gitter.im/nestjs/nestjs?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=body_badge"><img src="https://badges.gitter.im/nestjs/nestjs.svg" alt="Gitter" /></a>
-<a href="https://opencollective.com/nest#backer"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec"><img src="https://img.shields.io/badge/Donate-PayPal-dc3d53.svg"/></a>
-  <a href="https://twitter.com/nestframework"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Toptal screening project consisting of a REST API for keeping track of jogging times of users.
 
-## Installation
+## Installation (Linux/Mac OS)
+
+- Make sure you have [NVM](https://github.com/nvm-sh/nvm) installed.
+- Make sure and that you are using node's lts/erbium version
+```bash
+$ nvm install node lts/erbium
+```
+- Clone this repository and install the dependencies using npm.
 
 ```bash
+$ git clone https://git.toptal.com/Ivan-Ilijasic/cleivson-siqueira-de-arruda.git
+$ cd cleivson-siqueira-de-arruda
 $ npm install
 ```
 
+## Installation (Windows)
+
+Not yet supported because of [bcrypt](https://www.npmjs.com/package/bcrypt) dependency. We plan to change this dependency in future.
+
 ## Running the app
+
+In order to run the app, you need no create a database (only tested with MySql until now) and put its configurations in the file ormconfig.json.
 
 ```bash
 # development
@@ -54,22 +43,35 @@ $ npm run start:prod
 $ npm run test
 
 # e2e tests
+# For e2e tests you have to create a database and put its configurations in the file ormconfig.json with the name "test"
 $ npm run test:e2e
 
 # test coverage
 $ npm run test:cov
 ```
 
-## Support
+## API Documentation
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+When you run the app, the API documentation will be available through a Swagger page in the path ```/api```.
 
-## Stay in touch
+Example: `localhost:3000/api`
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## Additional tasks
 
-## License
+### Editing the Query Filter Syntax
 
-  Nest is [MIT licensed](LICENSE).
+First you need to install locally the [nearley](https://nearley.js.org/docs/getting-started) compiler:
+
+```npm install -g nearley```
+
+After that you can edit the grammar source file under `src/query/parser/grammar.ne` and compile it using the command:
+
+```nearleyc grammar.ne -o grammar.ts```
+
+#### Testing your query sintax
+For now nearly-test **does not support TypeScript**, so remove the `@preprocessor typescript` (if it's there) line 
+at the beginning of the grammar file and recompile your grammar using ```nearlyc grammar.ne -o grammar.js```.
+
+To test your changes you can use the `nearley-test` command:
+
+```nearleyc grammar.js -i "{YOUR TEST INPUT}"```
