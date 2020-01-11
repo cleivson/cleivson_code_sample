@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_PIPE } from '@nestjs/core';
-import { AdvancedQueryParser, ParseQueryPipe } from './parser';
+import { AdvancedQueryParser } from './parser';
+import { ParseQueryPipe } from './pipes';
 
 @Module({
   providers: [{

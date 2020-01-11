@@ -1,6 +1,6 @@
 import { ArgumentMetadata, Injectable, PipeTransform } from '@nestjs/common';
 import { AdvancedQuery } from 'query';
-import { AdvancedQueryParser } from './advanced-query.parser';
+import { AdvancedQueryParser } from 'query/parser';
 
 @Injectable()
 export class ParseQueryPipe<T> implements PipeTransform<string, AdvancedQuery<T> | string> {

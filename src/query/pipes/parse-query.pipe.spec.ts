@@ -1,8 +1,8 @@
 import { ArgumentMetadata, BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AdvancedQuery } from 'query';
+import { AdvancedQueryParser } from 'query/parser';
 import { anyString, instance, mock, when } from 'ts-mockito';
-import { AdvancedQueryParser } from './advanced-query.parser';
 import { ParseQueryPipe } from './parse-query.pipe';
 
 describe('ParseQueryPipe', () => {

@@ -16,6 +16,7 @@ $ git clone https://git.toptal.com/Ivan-Ilijasic/cleivson-siqueira-de-arruda.git
 $ cd cleivson-siqueira-de-arruda
 $ npm install
 ```
+- Install the latest version of [@nestjs/cli](https://docs.nestjs.com/cli/overview)
 
 ## Installation (Windows)
 
