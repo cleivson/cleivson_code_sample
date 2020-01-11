@@ -1,12 +1,22 @@
-import { Module } from '@nestjs/common';
+import { Module, ValidationPipe } from '@nestjs/common';
+import { APP_PIPE } from '@nestjs/core';
 import { ConfigModule } from 'config';
 import { DatabaseModule } from 'database';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
+import { UserModule } from './users';
 
 @Module({
-  imports: [ConfigModule, DatabaseModule],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [UserModule, ConfigModule, DatabaseModule, AuthModule],
+  providers: [{
+    provide: APP_PIPE,
+    useFactory: () => {
+      return new ValidationPipe({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        forbidUnknownValues: true,
+      });
+    },
+  }],
 })
 export class AppModule { }
