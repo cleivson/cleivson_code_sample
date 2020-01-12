@@ -13,7 +13,7 @@ export const throwIfBodyOverridesPath = (req: CrudRequest, entity: any) => {
       const bodyValue = entity[paramFilter.field];
       if (bodyValue) {
         if (bodyValue !== paramFilter.value) {
-          throw new BadRequestException('Body property cannot override path parameter.');
+          throw new BadRequestException(`Body property '${paramFilter.field}' cannot override path parameter.`);
         }
       } else {
         entity[paramFilter.field] = paramFilter.value;
