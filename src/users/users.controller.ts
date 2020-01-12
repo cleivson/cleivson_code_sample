@@ -2,7 +2,7 @@ import { ClassSerializerInterceptor, Controller, ForbiddenException, Get, Param,
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Crud, CrudController, CrudRequest, GetManyDefaultResponse, Override, ParsedBody, ParsedRequest } from '@nestjsx/crud';
-import { LoggedUser } from 'auth';
+import { LoggedUser } from 'auth/decorators/logged-user.decorator';
 import { propertyOf, throwIfBodyOverridesPath } from 'common';
 import { ParsedQuery } from 'query';
 import { AdvancedQuery } from 'query/advanced-query';
