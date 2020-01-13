@@ -1,52 +1,70 @@
-import { ApiProperty, ApiPropertyOptional, ApiResponseProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiResponseProperty } from '@nestjs/swagger';
 import { CrudValidationGroups } from '@nestjsx/crud';
-import { IsDefined, IsISO8601, IsOptional } from 'class-validator';
+import { IsDefined, IsISO8601, IsNotEmpty, IsOptional, Min } from 'class-validator';
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from 'users';
 
 const { CREATE, UPDATE } = CrudValidationGroups;
 
+/**
+ * Represents the persisted jogging activity of a user.
+ */
 @Entity()
 export class JoggingEntry {
   @PrimaryGeneratedColumn()
   @IsOptional({ groups: [CREATE] })
   id?: number;
 
+  /**
+   * The total travelled distance in meters.
+   */
   @Column()
   @IsDefined({ groups: [CREATE] })
   @IsOptional({ groups: [UPDATE] })
-  @ApiPropertyOptional()
-  @ApiResponseProperty()
-  distanceInMeters?: number;
+  @Min(1)
+  @ApiProperty({ description: 'The total travelled distance in meters', minimum: 1})
+  distance: number;
 
+  /**
+   * The jogging duration in time format (e.g.: 01:43:23).
+   */
   @Column()
-  @IsDefined({ groups: [CREATE] })
-  @ApiProperty({ type: 'string', format: 'time', example: '13:55:43' })
-  @ApiResponseProperty()
+  @IsNotEmpty({ groups: [CREATE] })
+  @ApiProperty({ description: 'The jogging duration', type: 'string', format: 'time', example: '00:55:43' })
   duration: string;
 
+  /**
+   * The location where the jogging happened.
+   */
   @Column()
-  @IsDefined({ groups: [CREATE] })
+  @IsNotEmpty({ groups: [CREATE] })
   @ApiProperty()
-  @ApiResponseProperty()
   location: string;
 
+  /**
+   * The UTC date when the jogging happened.
+   */
   @Column({ type: 'date' })
-  @IsDefined({ groups: [CREATE] })
+  @IsNotEmpty({ groups: [CREATE] })
   @IsISO8601()
-  @ApiProperty({ type: 'string', format: 'date', example: '2020-01-15' })
-  @ApiResponseProperty()
+  @ApiProperty({ description: 'The date when the jogging happened', type: 'string', format: 'date', example: '2020-01-15' })
   date: string;
 
+  /**
+   * The UTC time of day when the jogging happened.
+   */
   @Column({ type: 'time' })
-  @IsDefined({ groups: [CREATE] })
+  @IsNotEmpty({ groups: [CREATE] })
   @ApiProperty({ type: 'string', format: 'time', example: '13:55:43' })
-  @ApiResponseProperty()
   time: string;
 
+  /**
+   * The id of user associated to this jogging entry.
+   */
   @Column({ nullable: false })
-  @IsDefined({ groups: [CREATE] })
+  @IsNotEmpty({ groups: [CREATE] })
   @IsOptional({ groups: [UPDATE] })
+  @ApiProperty()
   userId?: number;
 
   @ManyToOne(type => User, { onDelete: 'CASCADE' })

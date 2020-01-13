@@ -1,7 +1,7 @@
-import { ClassSerializerInterceptor, Controller, Get, Param, ParseIntPipe, Patch, Post, Put, UseGuards, UseInterceptors } from '@nestjs/common';
+import { ClassSerializerInterceptor, Controller, Get, Patch, Post, Put, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { Crud, CrudRequest, CrudRequestInterceptor, GetManyDefaultResponse, Override, ParsedBody, ParsedRequest } from '@nestjsx/crud';
+import { Crud, CrudRequest, CrudRequestInterceptor, Override, ParsedBody, ParsedRequest } from '@nestjsx/crud';
 import { throwIfBodyOverridesPath } from 'common';
 import { AdvancedQuery, ParsedQuery } from 'query';
 import { Roles, RolesGuard, UserRoles } from 'users';
@@ -14,6 +14,9 @@ import { JoggingEntry } from './model';
     },
     routes: {
         exclude: ['createManyBase', 'getManyBase'],
+        deleteOneBase: {
+            returnDeleted: true,
+        },
     },
 })
 @UseInterceptors(ClassSerializerInterceptor)
@@ -26,7 +29,6 @@ export class JoggingController {
     constructor(private readonly service: JoggingService) { }
 
     @Post()
-    @UseInterceptors(CrudRequestInterceptor)
     @Override('createOneBase')
     async createOne(@ParsedRequest() req: CrudRequest, @ParsedBody() joggingEntry: JoggingEntry): Promise<JoggingEntry> {
         throwIfBodyOverridesPath(req, joggingEntry);
@@ -43,7 +45,6 @@ export class JoggingController {
     }
 
     @Put()
-    @UseInterceptors(CrudRequestInterceptor)
     @Override('replaceOneBase')
     async replaceOne(@ParsedRequest() req: CrudRequest, @ParsedBody() joggingEntry: JoggingEntry): Promise<JoggingEntry> {
         throwIfBodyOverridesPath(req, joggingEntry);
@@ -51,18 +52,15 @@ export class JoggingController {
         return this.service.saveJoggingEntry(joggingEntry);
     }
 
-    @Override()
-    async deleteOne(@ParsedRequest() req, @Param('id', ParseIntPipe) idToDelete) {
-        return this.service.deleteJoggingEntry(idToDelete);
-    }
-
     @Get()
     @ApiOperation({ summary: 'Get many Jogging Entries' })
     @ApiQuery({ name: 'query', type: 'string', required: false })
-    @UseInterceptors(CrudRequestInterceptor)
+    @ApiQuery({ name: 'limit', type: 'number', required: false, schema: { minimum: 1 } })
+    @ApiQuery({ name: 'page', type: 'number', required: false, schema: { minimum: 1 } })
+    @ApiQuery({ name: 'sort', type: 'string', isArray: true, required: false })
     @Override('getManyBase')
-    async getMany(@ParsedRequest() req: CrudRequest, @ParsedQuery() query: AdvancedQuery<JoggingEntry>)
-        : Promise<GetManyDefaultResponse<JoggingEntry> | JoggingEntry[]> {
+    @UseInterceptors(CrudRequestInterceptor)
+    async getMany(@ParsedRequest() req: CrudRequest, @ParsedQuery() query: AdvancedQuery<JoggingEntry>): Promise<JoggingEntry[]> {
         return this.service.getJoggingEntries(req, query);
     }
 }

@@ -17,6 +17,9 @@ const USER_ID = 'userId';
     },
     routes: {
         exclude: ['createManyBase', 'getManyBase'],
+        deleteOneBase: {
+            returnDeleted: true,
+        },
     },
     params: {
         userId: {
@@ -49,7 +52,6 @@ export class UserJoggingController {
     }
 
     @Patch()
-    @UseInterceptors(CrudRequestInterceptor)
     @Override('updateOneBase')
     async updateOne(@ParsedRequest() req: CrudRequest,
                     @ParsedBody() joggingEntry: JoggingEntry,
@@ -64,7 +66,6 @@ export class UserJoggingController {
     }
 
     @Put()
-    @UseInterceptors(CrudRequestInterceptor)
     @Override('replaceOneBase')
     async replaceOne(@ParsedRequest() req: CrudRequest,
                      @ParsedBody() joggingEntry: JoggingEntry,
@@ -79,7 +80,6 @@ export class UserJoggingController {
     }
 
     @Delete()
-    @UseInterceptors(CrudRequestInterceptor)
     @Override('deleteOneBase')
     async deleteOne(@ParsedRequest() req: CrudRequest,
                     @Param(USER_ID, ParseIntPipe) pathUserId: number,
@@ -92,12 +92,15 @@ export class UserJoggingController {
     @Get()
     @ApiOperation({ summary: 'Get many jogging entries related to a specific user' })
     @ApiQuery({ name: 'query', type: 'string', required: false })
-    @UseInterceptors(CrudRequestInterceptor)
+    @ApiQuery({ name: 'limit', type: 'number', required: false, schema: { minimum: 1 } })
+    @ApiQuery({ name: 'page', type: 'number', required: false, schema: { minimum: 1 } })
+    @ApiQuery({ name: 'sort', type: 'string', isArray: true, required: false })
     @Override('getManyBase')
+    @UseInterceptors(CrudRequestInterceptor)
     async getUserJoggingEntries(@ParsedRequest() req: CrudRequest,
                                 @ParsedQuery() query: AdvancedQuery<JoggingEntry>,
                                 @Param(USER_ID, ParseIntPipe) pathUserId: number,
-                                @LoggedUser() user: LoggedUserDto): Promise<GetManyDefaultResponse<JoggingEntry> | JoggingEntry[]> {
+                                @LoggedUser() user: LoggedUserDto): Promise<JoggingEntry[]> {
 
         this.validateJoggingEntryOwner(user, pathUserId);
 

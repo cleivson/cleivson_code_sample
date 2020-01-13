@@ -51,10 +51,10 @@ describe('JoggingController (e2e)', () => {
     };
 
     validJoggingEntriesToInsert = [
-      { location: 'Sao Paulo', distanceInMeters: 70, duration: '00:01:00', date: '2019-10-05', time: '13:34:30' },
-      { location: 'New York', distanceInMeters: 345, duration: '00:05:00', date: '2019-10-05', time: '13:34:35' },
-      { location: 'Las Vegas', distanceInMeters: 235, duration: '00:03:30', date: '2019-10-05', time: '13:34:38' },
-      { location: 'Las Vegas', distanceInMeters: 235, duration: '00:03:30', date: '2019-10-06', time: '13:34:38' },
+      { location: 'Sao Paulo', distance: 70, duration: '00:01:00', date: '2019-10-05', time: '13:34:30' },
+      { location: 'New York', distance: 345, duration: '00:05:00', date: '2019-10-05', time: '13:34:35' },
+      { location: 'Las Vegas', distance: 235, duration: '00:03:30', date: '2019-10-05', time: '13:34:38' },
+      { location: 'Las Vegas', distance: 235, duration: '00:03:30', date: '2019-10-06', time: '13:34:38' },
     ];
   });
 
@@ -82,7 +82,7 @@ describe('JoggingController (e2e)', () => {
 
       describe('with query filter', () => {
         it('should return only filtered results', async () => {
-          const query = 'date < \'2019-10-06\' and (location = \'Las Vegas\' or distanceInMeters < 300)';
+          const query = 'date < \'2019-10-06\' and (location = \'Las Vegas\' or distance < 300)';
 
           return request.get(JOGGING_ROUTE)
             .auth(accessToken, { type: 'bearer' })

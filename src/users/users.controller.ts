@@ -1,7 +1,7 @@
 import { ClassSerializerInterceptor, Controller, ForbiddenException, Get, Param, ParseIntPipe, Patch, Post, Put, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { Crud, CrudController, CrudRequest, GetManyDefaultResponse, Override, ParsedBody, ParsedRequest } from '@nestjsx/crud';
+import { Crud, CrudController, CrudRequest, CrudRequestInterceptor, GetManyDefaultResponse, Override, ParsedBody, ParsedRequest } from '@nestjsx/crud';
 import { LoggedUser } from 'auth/decorators/logged-user.decorator';
 import { propertyOf, throwIfBodyOverridesPath } from 'common';
 import { ParsedQuery } from 'query';
@@ -17,7 +17,10 @@ import { UsersService } from './users.service';
     type: User,
   },
   routes: {
-    exclude: ['createManyBase'],
+    exclude: ['createManyBase', 'getManyBase'],
+    deleteOneBase: {
+        returnDeleted: true,
+    }, // TODO add test to check whether or not the user is being returned
   },
   query: {
     exclude: [
@@ -45,7 +48,11 @@ export class UsersController implements CrudController<User> {
   @Roles(UserRoles.Admin, UserRoles.UserManager)
   @ApiOperation({ summary: 'Get many Users' })
   @ApiQuery({ name: 'query', type: 'string', required: false })
-  @Override()
+  @ApiQuery({ name: 'limit', type: 'number', required: false, schema: { minimum: 1 } })
+  @ApiQuery({ name: 'page', type: 'number', required: false, schema: { minimum: 1 } })
+  @ApiQuery({ name: 'sort', type: 'string', isArray: true, required: false })
+  @Override('getManyBase')
+  @UseInterceptors(CrudRequestInterceptor)
   async getMany(@ParsedRequest() req: CrudRequest, @ParsedQuery() query: AdvancedQuery<User>): Promise<GetManyDefaultResponse<User> | User[]> {
     return this.service.getUsers(req, query);
   }
@@ -60,7 +67,7 @@ export class UsersController implements CrudController<User> {
   }
 
   @Override()
-  async getOne(@ParsedRequest() req, @LoggedUser() loggedUser: LoggedUserDto): Promise<void | User> {
+  async getOne(@ParsedRequest() req: CrudRequest, @LoggedUser() loggedUser: LoggedUserDto): Promise<void | User> {
     const resultUser = await this.base.getOneBase(req);
 
     this.checkPermission(loggedUser, resultUser);
@@ -69,12 +76,12 @@ export class UsersController implements CrudController<User> {
   }
 
   @Override()
-  async deleteOne(@ParsedRequest() req, @LoggedUser() loggedUser: LoggedUserDto, @Param('id', ParseIntPipe) idToDelete): Promise<void | User> {
+  async deleteOne(@ParsedRequest() req: CrudRequest, @LoggedUser() loggedUser: LoggedUserDto, @Param('id', ParseIntPipe) idToDelete): Promise<void | User> {
     const existingUser = await this.service.getOne(req);
 
     this.checkPermission(loggedUser, existingUser);
 
-    return this.service.deleteUser(idToDelete);
+    return this.service.deleteOne(req);
   }
 
   @Put()
