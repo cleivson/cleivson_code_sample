@@ -31,19 +31,22 @@ export class SeederService {
       username: this.adminUserName,
       passwordHash: this.defaultPasswordHashed,
       role: UserRoles.Admin,
+      id: 1,
     },
     {
       username: this.managerUserName,
       passwordHash: this.defaultPasswordHashed,
       role: UserRoles.UserManager,
+      id: 2,
     },
     {
       username: this.regularUserName,
       passwordHash: this.defaultPasswordHashed,
+      id: 3,
     }];
 
     await Promise.all(defaultUsers.map(async user => {
-      await this.usersRepository.insert(user)
+      await this.usersRepository.save(user)
         .then(_ => this.logger.log(`User ${user.username} inserted.`))
         .catch(reason => this.logger.error(reason));
     }));
