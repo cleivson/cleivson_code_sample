@@ -5,9 +5,10 @@ import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { AdvancedQuery, TypeormQueryBuilderVisitor } from 'query';
 import { Repository } from 'typeorm';
 import { User } from 'users';
-import { InvalidUserException } from './exceptions/invalid-user.exception';
+import { WeeklyReportDto } from './dto/weekly-report.dto';
 import { InvalidUserException } from './exceptions';
 import { JoggingEntry } from './model';
+import { WeeklyReportGenerator } from './reports';
 import moment = require('moment');
 
 /**
@@ -15,7 +16,8 @@ import moment = require('moment');
  */
 @Injectable()
 export class JoggingService extends TypeOrmCrudService<JoggingEntry> {
-  constructor(@InjectRepository(JoggingEntry) repository: Repository<JoggingEntry>) {
+  constructor(@InjectRepository(JoggingEntry) repository: Repository<JoggingEntry>,
+              @Inject(WeeklyReportGenerator) private reportGenerator: WeeklyReportGenerator) {
     super(repository);
   }
 
@@ -106,6 +108,16 @@ export class JoggingService extends TypeOrmCrudService<JoggingEntry> {
     } catch (e) {
       this.translateError(e);
     }
+  }
+
+  /**
+   * Generates a weekly report containing the jogging entries of an user.
+   * @param userId The id of the user to whom the jogging entries must be related.
+   */
+  async generateWeeklyReport(userId: number): Promise<WeeklyReportDto[]> {
+    const userJoggingEntries = await this.repo.find({ userId });
+
+    return this.reportGenerator.generate(userJoggingEntries);
   }
 
   private async validateUserNotChanged(joggingEntry: JoggingEntry) {

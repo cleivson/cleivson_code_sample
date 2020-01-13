@@ -6,6 +6,7 @@ import { LoggedUser } from 'auth';
 import { AdvancedQuery, ParsedQuery } from 'query';
 import { LoggedUserDto, Roles, RolesGuard, UserRoles } from 'users';
 import { throwIfBodyOverridesPath } from '../common/controller.functions';
+import { WeeklyReportDto } from './dto/weekly-report.dto';
 import { JoggingService } from './jogging.service';
 import { JoggingEntry } from './model';
 
@@ -105,6 +106,16 @@ export class UserJoggingController {
         this.validateJoggingEntryOwner(user, pathUserId);
 
         return this.service.getJoggingEntries(req, query, pathUserId);
+    }
+
+    @Get('/weekly-report')
+    @ApiOperation({ summary: 'Generate jogging weekly report for a specific user' })
+    async generateWeeklyReport(@Param(USER_ID, ParseIntPipe) pathUserId: number,
+                               @LoggedUser() user: LoggedUserDto): Promise<GetManyDefaultResponse<WeeklyReportDto> | WeeklyReportDto[]> {
+
+        this.validateJoggingEntryOwner(user, pathUserId);
+
+        return this.service.generateWeeklyReport(pathUserId);
     }
 
     private validateJoggingEntryOwner(user: LoggedUserDto, pathUserId: number) {
