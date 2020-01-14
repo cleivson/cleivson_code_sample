@@ -2,10 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { JwtPassportService, JwtStrategyModule } from 'auth/jwt';
 import { capture, instance, mock, spy } from 'ts-mockito';
 import { CreateUserRequestDto, UsersService } from 'users';
-import { BasicAuthenticationController } from './basic.controller';
+import { AccountController } from './account.controller';
 
-describe('Basic Authentication Controller', () => {
-  let controller: BasicAuthenticationController;
+describe('Account Controller', () => {
+  let controller: AccountController;
   let usersServiceMock: UsersService;
   let jwtServiceSpy: JwtPassportService;
 
@@ -14,14 +14,14 @@ describe('Basic Authentication Controller', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       imports: [JwtStrategyModule],
-      controllers: [BasicAuthenticationController],
+      controllers: [AccountController],
       providers: [{
         provide: UsersService,
         useValue: instance(usersServiceMock),
       }],
     }).compile();
 
-    controller = module.get<BasicAuthenticationController>(BasicAuthenticationController);
+    controller = module.get<AccountController>(AccountController);
     jwtServiceSpy = spy(module.get<JwtPassportService>(JwtPassportService));
   });
 
@@ -31,12 +31,13 @@ describe('Basic Authentication Controller', () => {
 
   describe('register', () => {
     it('should register user in UsersService', () => {
-      const expectedRequest: CreateUserRequestDto = { username: 'test', password: 'password' };
+      const expectedDto: CreateUserRequestDto = { username: 'test', password: 'password' };
 
-      controller.register(expectedRequest);
+      controller.register(undefined, expectedDto);
 
-      const [actualRequest] = capture(usersServiceMock.registerUser).last();
-      expect(actualRequest).toEqual(expectedRequest);
+      const [, actualDto] = capture(usersServiceMock.createOne).last();
+
+      expect(actualDto).toEqual(expectedDto);
     });
   });
 

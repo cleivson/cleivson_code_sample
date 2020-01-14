@@ -6,10 +6,10 @@ import * as req from 'supertest';
 import { getConnection, Repository } from 'typeorm';
 import { User, UserRoles } from 'users';
 
-const LOGIN_ROUTE = '/auth/login';
-const REGISTER_ROUTE = '/auth/register';
+const LOGIN_ROUTE = '/account/login';
+const REGISTER_ROUTE = '/account';
 
-describe('AuthController (e2e)', () => {
+describe('AccountController (e2e)', () => {
   let app: INestApplication;
   let moduleFixture: TestingModule;
   let seederService: SeederService;
@@ -35,7 +35,7 @@ describe('AuthController (e2e)', () => {
     await seederService.seed();
   });
 
-  describe('/auth/login (POST)', () => {
+  describe(`${LOGIN_ROUTE} (POST)`, () => {
     it('should return 401 for no credentials', async () => {
       return request
         .post(LOGIN_ROUTE)
@@ -100,7 +100,7 @@ describe('AuthController (e2e)', () => {
     });
   });
 
-  describe('/auth/register (POST)', () => {
+  describe(`${REGISTER_ROUTE} (POST)`, () => {
     describe('with role set', () => {
       it('should return 400 (BAD REQUEST)', () => {
         const username = 'testuser';

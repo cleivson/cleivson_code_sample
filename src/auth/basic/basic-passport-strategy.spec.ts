@@ -31,7 +31,7 @@ describe('BasicPassportStrategy', () => {
 
     it('should throw exception for invalid user', async () => {
       const findUserMock = jest.spyOn(usersService, 'findOne');
-      findUserMock.mockImplementationOnce((conditions) => Promise.resolve(null));
+      findUserMock.mockImplementationOnce(() => Promise.resolve(null));
 
       await expect(strategy.validate(username, password))
         .rejects
@@ -47,10 +47,10 @@ describe('BasicPassportStrategy', () => {
       const user = { passwordHash, password, ...expectedLoggedUser };
 
       const findUserMock = jest.spyOn(usersService, 'findOne');
-      findUserMock.mockImplementationOnce((conditions) => Promise.resolve(user));
+      findUserMock.mockImplementationOnce(() => Promise.resolve(user));
 
       const verifyPasswordMock = jest.spyOn(usersService, 'verifyPassword');
-      verifyPasswordMock.mockImplementation((pass, hash) => Promise.resolve(false));
+      verifyPasswordMock.mockImplementation(() => Promise.resolve(false));
 
       await expect(strategy.validate(username, password))
         .rejects
@@ -62,14 +62,14 @@ describe('BasicPassportStrategy', () => {
       findUserMock.mockRestore();
     });
 
-    it('should return logged user for right credentias', async () => {
+    it('should return logged user for right credentials', async () => {
       const passwordHash = 'klasdma';
 
       const findUserMock = jest.spyOn(usersService, 'findOne');
-      findUserMock.mockImplementationOnce((conditions) => Promise.resolve({ passwordHash, password, ...expectedLoggedUser }));
+      findUserMock.mockImplementationOnce(() => Promise.resolve({ passwordHash, password, ...expectedLoggedUser }));
 
       const verifyPasswordMock = jest.spyOn(usersService, 'verifyPassword');
-      verifyPasswordMock.mockImplementation((pass, hash) => Promise.resolve(true));
+      verifyPasswordMock.mockImplementation(() => Promise.resolve(true));
 
       const actualLoggedUser = await strategy.validate(username, password);
 
