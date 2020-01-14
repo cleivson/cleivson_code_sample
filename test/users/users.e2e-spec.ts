@@ -104,16 +104,30 @@ describe('UserController (e2e)', () => {
     describe(`${USERS_ROUTE} (POST)`, () => {
 
       describe('user with id', () => {
-        it('should return Bad Request', () => {
-          return request.post(USERS_ROUTE)
-            .auth(accessToken, { type: 'bearer' })
-            .send({ ...validUserToInsert, id: 100 })
-            .expect(HttpStatus.BAD_REQUEST);
+        describe('of a existing user', () => {
+          it('should return 409 (Conflict)', async () => {
+            const existingUserCredentials = seederService.getRegularUserCredentials();
+
+            const existingUser = await userRepository.findOne({ username: existingUserCredentials.username });
+
+            return request.post(USERS_ROUTE)
+              .auth(accessToken, { type: 'bearer' })
+              .send({ ...validUserToInsert, id: existingUser.id })
+              .expect(HttpStatus.CONFLICT);
+          });
+        });
+        describe('of a new user', () => {
+          it('should return 201 (Created)', () => {
+            return request.post(USERS_ROUTE)
+              .auth(accessToken, { type: 'bearer' })
+              .send({ ...validUserToInsert, id: 100 })
+              .expect(HttpStatus.CREATED);
+          });
         });
       });
 
       describe('user with password hash', () => {
-        it('should return Bad Request', () => {
+        it('should return 400 (Bad Request)', () => {
           return request.post(USERS_ROUTE)
             .auth(accessToken, { type: 'bearer' })
             .send({ ...validUserToInsert, passwordHash: 'passwordhash' })
@@ -122,7 +136,7 @@ describe('UserController (e2e)', () => {
       });
 
       describe('user without password', () => {
-        it('should return Bad Request', () => {
+        it('should return 400 (Bad Request)', () => {
           validUserToInsert.password = undefined;
 
           return request.post(USERS_ROUTE)
@@ -133,7 +147,7 @@ describe('UserController (e2e)', () => {
       });
 
       describe('user without username', () => {
-        it('should return Bad Request', () => {
+        it('should return 400 (Bad Request)', () => {
           validUserToInsert.username = undefined;
 
           return request.post(USERS_ROUTE)
@@ -159,7 +173,7 @@ describe('UserController (e2e)', () => {
       });
 
       describe('valid user', () => {
-        it('should save only hashed password', async () => {
+        it('should not save plain text password', async () => {
           await request.post(USERS_ROUTE)
             .auth(accessToken, { type: 'bearer' })
             .send(validUserToInsert)
@@ -173,7 +187,7 @@ describe('UserController (e2e)', () => {
         });
       });
 
-      describe('existing user', () => {
+      describe('existing username', () => {
         it('should return 409 (Conflict)', async () => {
           const existingUser = seederService.getRegularUserCredentials();
           return request.post(USERS_ROUTE)

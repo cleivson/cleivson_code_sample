@@ -1,7 +1,7 @@
-import { ClassSerializerInterceptor, Controller, ForbiddenException, Get, Param, ParseIntPipe, Patch, Post, Put, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, ForbiddenException, Get, Param, ParseIntPipe, Patch, Put, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { Crud, CrudController, CrudRequest, CrudRequestInterceptor, GetManyDefaultResponse, Override, ParsedBody, ParsedRequest } from '@nestjsx/crud';
+import { Crud, CrudController, CrudRequest, CrudRequestInterceptor, Override, ParsedBody, ParsedRequest } from '@nestjsx/crud';
 import { LoggedUser } from 'auth/decorators/logged-user.decorator';
 import { propertyOf, throwIfBodyOverridesPath } from 'common';
 import { ParsedQuery } from 'query';
@@ -12,15 +12,13 @@ import { RolesGuard } from './guards';
 import { User, UserRoles } from './model';
 import { UsersService } from './users.service';
 
+const USER_ID = 'id';
 @Crud({
   model: {
     type: User,
   },
   routes: {
     exclude: ['createManyBase', 'getManyBase'],
-    deleteOneBase: {
-        returnDeleted: true,
-    }, // TODO add test to check whether or not the user is being returned
   },
   query: {
     exclude: [
@@ -32,11 +30,10 @@ import { UsersService } from './users.service';
   },
 })
 @Controller('users')
-@UseInterceptors(ClassSerializerInterceptor)
-@Roles(UserRoles.Admin, UserRoles.UserManager, UserRoles.User)
-@UseGuards(AuthGuard('jwt'), RolesGuard)
-@ApiBearerAuth()
 @ApiTags('Users')
+@ApiBearerAuth()
+@UseGuards(AuthGuard('jwt'), RolesGuard)
+@Roles(UserRoles.Admin, UserRoles.UserManager, UserRoles.User)
 export class UsersController implements CrudController<User> {
   constructor(readonly service: UsersService) { }
 
@@ -44,26 +41,14 @@ export class UsersController implements CrudController<User> {
     return this;
   }
 
-  @Get()
-  @Roles(UserRoles.Admin, UserRoles.UserManager)
-  @ApiOperation({ summary: 'Get many Users' })
-  @ApiQuery({ name: 'query', type: 'string', required: false })
-  @ApiQuery({ name: 'limit', type: 'number', required: false, schema: { minimum: 1 } })
-  @ApiQuery({ name: 'page', type: 'number', required: false, schema: { minimum: 1 } })
-  @ApiQuery({ name: 'sort', type: 'string', isArray: true, required: false })
-  @Override('getManyBase')
-  @UseInterceptors(CrudRequestInterceptor)
-  async getMany(@ParsedRequest() req: CrudRequest, @ParsedQuery() query: AdvancedQuery<User>): Promise<GetManyDefaultResponse<User> | User[]> {
-    return this.service.getUsers(req, query);
-  }
-
-  @Post()
   @Roles(UserRoles.Admin, UserRoles.UserManager)
   @Override()
-  async createOne(@ParsedRequest() req: CrudRequest, @ParsedBody() dto: User, @LoggedUser() loggedUser: LoggedUserDto): Promise<Partial<User>> {
+  async createOne(@ParsedRequest() req: CrudRequest, @ParsedBody() dto: User, @LoggedUser() loggedUser: LoggedUserDto)
+    : Promise<Partial<User>> {
+
     this.checkPermission(loggedUser, dto);
 
-    return this.service.createUser(dto);
+    return this.service.createOne(req, dto);
   }
 
   @Override()
@@ -76,7 +61,7 @@ export class UsersController implements CrudController<User> {
   }
 
   @Override()
-  async deleteOne(@ParsedRequest() req: CrudRequest, @LoggedUser() loggedUser: LoggedUserDto, @Param('id', ParseIntPipe) idToDelete): Promise<void | User> {
+  async deleteOne(@ParsedRequest() req: CrudRequest, @LoggedUser() loggedUser: LoggedUserDto): Promise<void | User> {
     const existingUser = await this.service.getOne(req);
 
     this.checkPermission(loggedUser, existingUser);
@@ -89,16 +74,10 @@ export class UsersController implements CrudController<User> {
   async replaceOne(@ParsedRequest() req: CrudRequest,
                    @ParsedBody() dto: User,
                    @LoggedUser() loggedUser: LoggedUserDto,
-                   @Param('id', ParseIntPipe) paramId): Promise<Partial<User>> {
-    throwIfBodyOverridesPath(req, dto);
+                   @Param(USER_ID, ParseIntPipe) paramId: number): Promise<Partial<User>> {
+    await this.checkPermissionToUpdate(req, dto, loggedUser, paramId);
 
-    this.checkPermission(loggedUser, dto);
-
-    const existingUser = await this.service.getOne(req);
-
-    this.checkPermission(loggedUser, existingUser);
-
-    return this.service.saveUser(dto);
+    return this.service.replaceOne(req, dto);
   }
 
   @Patch()
@@ -106,18 +85,35 @@ export class UsersController implements CrudController<User> {
   async updateOne(@ParsedRequest() req: CrudRequest,
                   @ParsedBody() dto: User,
                   @LoggedUser() loggedUser: LoggedUserDto,
-                  @Param('id', ParseIntPipe) paramId): Promise<Partial<User>> {
+                  @Param(USER_ID, ParseIntPipe) paramId: number): Promise<Partial<User>> {
+    await this.checkPermissionToUpdate(req, dto, loggedUser, paramId);
+
+    return this.service.updateOne(req, dto);
+  }
+
+  @Get()
+  @Roles(UserRoles.Admin, UserRoles.UserManager)
+  @ApiOperation({ summary: 'Get many Users' })
+  @ApiQuery({ name: 'query', type: 'string', required: false })
+  @ApiQuery({ name: 'limit', type: 'number', required: false, schema: { minimum: 1 } })
+  @ApiQuery({ name: 'page', type: 'number', required: false, schema: { minimum: 1 } })
+  @ApiQuery({ name: 'sort', type: 'string', isArray: true, required: false })
+  @Override('getManyBase')
+  @UseInterceptors(CrudRequestInterceptor)
+  async getMany(@ParsedRequest() req: CrudRequest, @ParsedQuery() query: AdvancedQuery<User>): Promise<User[]> {
+    return this.service.getUsers(req, query);
+  }
+
+  private async checkPermissionToUpdate(req: CrudRequest, dto: User, loggedUser: LoggedUserDto, paramId: number) {
     throwIfBodyOverridesPath(req, dto);
 
     this.checkPermission(loggedUser, dto);
 
-    const existingUser = await this.service.getOne(req);
+    const existingUser = await this.service.findOne(paramId);
 
-    this.checkPermission(loggedUser, existingUser);
-
-    const userToUpdate = Object.assign(new User(), existingUser, dto);
-
-    return this.service.updateUser(userToUpdate);
+    if (existingUser) {
+      this.checkPermission(loggedUser, existingUser);
+    }
   }
 
   private checkPermission(loggedUser: LoggedUserDto, userToBeModified: User) {

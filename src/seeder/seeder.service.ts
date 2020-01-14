@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DeepPartial, Repository } from 'typeorm';
-import { CreateUserRequestDto, User, UserRoles } from 'users';
+import { User, UserRoles } from 'users';
 
 @Injectable()
 export class SeederService {
@@ -14,15 +14,15 @@ export class SeederService {
   constructor(@InjectRepository(User) private readonly usersRepository: Repository<User>,
               private readonly logger: Logger) { }
 
-  getAdminUserCredentials(): CreateUserRequestDto {
+  getAdminUserCredentials(): Partial<User> {
     return { username: this.adminUserName, password: this.defaultPassword };
   }
 
-  getManagerUserCredentials(): CreateUserRequestDto {
+  getManagerUserCredentials(): Partial<User> {
     return { username: this.managerUserName, password: this.defaultPassword };
   }
 
-  getRegularUserCredentials(): CreateUserRequestDto {
+  getRegularUserCredentials(): Partial<User> {
     return { username: this.regularUserName, password: this.defaultPassword };
   }
 

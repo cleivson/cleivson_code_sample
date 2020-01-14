@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CrudRequest } from '@nestjsx/crud';
 import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { AdvancedQuery, TypeormQueryBuilderVisitor } from 'query';
-import { Repository } from 'typeorm';
+import { QueryFailedError, Repository } from 'typeorm';
 import { User } from 'users';
 import { WeeklyReportDto } from './dto/weekly-report.dto';
 import { InvalidUserException } from './exceptions';
@@ -131,7 +131,7 @@ export class JoggingService extends TypeOrmCrudService<JoggingEntry> {
   }
 
   private translateError(e: any) {
-    if (e.name === 'QueryFailedError') {
+    if (e instanceof QueryFailedError) {
       throw new BadRequestException(e.message);
     }
     throw e;

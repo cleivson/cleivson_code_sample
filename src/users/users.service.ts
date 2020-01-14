@@ -4,8 +4,7 @@ import { CrudRequest } from '@nestjsx/crud';
 import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import * as bcrypt from 'bcrypt';
 import { AdvancedQuery, TypeormQueryBuilderVisitor } from 'query';
-import { Repository } from 'typeorm';
-import { CreateUserRequestDto } from './dto';
+import { DeepPartial, QueryFailedError, Repository } from 'typeorm';
 import { DuplicateUserException } from './exceptions/duplicate-user.exception';
 import { User } from './model';
 
@@ -26,33 +25,20 @@ export class UsersService extends TypeOrmCrudService<User> {
   }
 
   /**
-   * Creates an account for a new user.
-   * @param userDto The information that a new user must provide to create an account.
-   * @throws DuplicateUserException if already exists an user with the same username.
-   * @returns The created user.
-   */
-  async registerUser(userDto: CreateUserRequestDto): Promise<User> {
-    // To avoid data injection
-    const { password, username } = userDto;
-
-    const userToInsert: User = Object.assign(new User(), { password, username });
-
-    return this.createUser(userToInsert);
-  }
-
-  /**
    * Creates a new user.
    * @param user The user to be created.
    * @throws DuplicateUserException if already exists an user with the same username.
    * @throws BadRequestException if the id and/or the passwordHash properties of the user are set.
    * @returns The created user.
    */
-  async createUser(user: User): Promise<User> {
-    if (user.id) {
-      this.throwBadRequestException('New user should not have an id.');
-    }
+  async createOne(req: CrudRequest, user: DeepPartial<User>): Promise<User> {
+    await this.checkExistingUserId(user);
 
-    return this.saveUser(user);
+    try {
+      return await super.createOne(req, user);
+    } catch (e) {
+      this.translateError(e, user);
+    }
   }
 
   /**
@@ -63,14 +49,12 @@ export class UsersService extends TypeOrmCrudService<User> {
    * @throws BadRequestException if the passwordHash property of the user is set.
    * @returns The updated user.
    */
-  async updateUser(user: User): Promise<User> {
-    const existingUser = await this.repo.findOne(user.id);
-
-    if (!existingUser) {
-      this.throwNotFoundException(this.repo.metadata.targetName);
+  async updateOne(req: CrudRequest, dto: DeepPartial<User>): Promise<User> {
+    try {
+      return await super.updateOne(req, dto);
+    } catch (e) {
+      this.translateError(e, dto);
     }
-
-    return this.saveUser(user);
   }
 
   /**
@@ -80,19 +64,11 @@ export class UsersService extends TypeOrmCrudService<User> {
    * @throws BadRequestException if the passwordHash property of the user is set.
    * @returns The saved user.
    */
-  async saveUser(user: User): Promise<User> {
-    if (user.passwordHash) {
-      this.throwBadRequestException('Password hash should not be set.');
-    }
-
-    if (user.password) {
-      user.passwordHash = await this.hashPassword(user.password);
-    }
-
+  async replaceOne(req: CrudRequest, dto: DeepPartial<User>): Promise<User> {
     try {
-      return await this.repo.save(user);
+      return await super.replaceOne(req, dto);
     } catch (e) {
-      this.translateError(e, user);
+      this.translateError(e, dto);
     }
   }
 
@@ -128,18 +104,39 @@ export class UsersService extends TypeOrmCrudService<User> {
    * Encrypts a password to be persisted in the database.
    * @param password The plain-text password to be encrypted.
    */
-  async hashPassword(password: string): Promise<string> {
+  hashPassword(password: string): string {
     return bcrypt.hashSync(password, saltRounds);
   }
 
-  private translateError(e: any, userDto: CreateUserRequestDto) {
-    if (e.name === 'QueryFailedError') {
-      if (e.code === 'ER_DUP_ENTRY') {
-        throw new DuplicateUserException(userDto.username);
+  protected prepareEntityBeforeSave(dto: DeepPartial<User>, parsed: CrudRequest['parsed']): User {
+    if (dto.password) {
+      dto.passwordHash = this.hashPassword(dto.password);
+    }
+
+    return super.prepareEntityBeforeSave(dto, parsed);
+  }
+
+  private async checkExistingUserId(user: DeepPartial<User>) {
+    if (user.id) {
+      const existingUser = await this.repo.findOne(user.id);
+      if (existingUser) {
+        this.throwDuplicateUserException(user);
+      }
+    }
+  }
+
+  private translateError(e: any, userDto: Partial<User>) {
+    if (e instanceof QueryFailedError) {
+      if ((e as any).code === 'ER_DUP_ENTRY') {
+        this.throwDuplicateUserException(userDto);
       } else {
         throw new BadRequestException(e.message);
       }
     }
     throw e;
+  }
+
+  private throwDuplicateUserException(userDto: Partial<User>) {
+    throw new DuplicateUserException(userDto.username);
   }
 }

@@ -1,7 +1,7 @@
-import { ApiResponseProperty } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { CrudValidationGroups } from '@nestjsx/crud';
 import { Exclude } from 'class-transformer';
-import { IsDefined, IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsDefined, IsEnum, IsOptional } from 'class-validator';
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 import { UserRoles } from './users.roles';
 
@@ -14,28 +14,27 @@ const { CREATE, UPDATE } = CrudValidationGroups;
 export class User {
   @PrimaryGeneratedColumn()
   @IsOptional({ always: true })
-  @ApiResponseProperty()
+  @ApiPropertyOptional()
   id?: number;
 
   @Column({ unique: true })
-  @IsString()
-  @IsOptional({ groups: [UPDATE] })
-  @ApiResponseProperty()
-  username: string;
-
-  @Column()
-  @Exclude({ toPlainOnly: true })
-  passwordHash: string;
-
-  @Exclude({ toPlainOnly: true })
   @IsDefined({ groups: [CREATE] })
   @IsOptional({ groups: [UPDATE] })
-  @IsString()
+  @ApiPropertyOptional()
+  username: string;
+
+  @Exclude({ toPlainOnly: true })
+  @IsDefined({ groups: [CREATE, UPDATE] })
+  @IsOptional({ groups: [UPDATE] })
+  @ApiPropertyOptional({ writeOnly: true })
   password: string;
 
   @Column({ type: 'enum', default: UserRoles.User, enum: Object.keys(UserRoles) })
   @IsEnum(UserRoles)
   @IsOptional({ always: true })
-  @ApiResponseProperty()
+  @ApiPropertyOptional()
   role: UserRoles;
+
+  @Column()
+  passwordHash: string;
 }
