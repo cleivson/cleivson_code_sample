@@ -4,12 +4,13 @@ import { AuthModule } from './auth';
 import { ConfigModule } from './config';
 import { DatabaseModule } from './database';
 import { JoggingModule } from './jogging';
+import { MailModule } from './mail/mail.module';
 import { QueryModule } from './query';
 import { SeederModule } from './seeder';
 import { UserModule } from './users';
 
 @Module({
-  imports: [UserModule, AuthModule, ConfigModule, DatabaseModule, SeederModule, QueryModule, JoggingModule],
+  imports: [UserModule, AuthModule, ConfigModule, DatabaseModule, SeederModule, QueryModule, JoggingModule, MailModule],
   providers: [{
     provide: APP_PIPE,
     useFactory: () => {

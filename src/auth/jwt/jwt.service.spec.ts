@@ -31,8 +31,8 @@ describe('JwtPassportService', () => {
   });
 
   describe('.parseToken()', () => {
-    const expectedUser: LoggedUserDto = { username: 'testuser', id: 23, role: UserRoles.User };
-    const tokenPayload = { username: expectedUser.username, sub: expectedUser };
+    const expectedUser: LoggedUserDto = { email: 'testuser', id: 23, role: UserRoles.User };
+    const tokenPayload = { username: expectedUser.email, sub: expectedUser };
 
     it('should parse logged user from token', () => {
       const actualUser = service.parseToken(tokenPayload);
@@ -42,7 +42,7 @@ describe('JwtPassportService', () => {
   });
 
   describe('.generateToken()', () => {
-    const user: LoggedUserDto = { username: 'testuser', id: 23, role: UserRoles.User };
+    const user: LoggedUserDto = { email: 'testuser', id: 23, role: UserRoles.User };
     const expectedToken = 'thisisatoken';
 
     it('should return signed payload', async () => {
@@ -53,7 +53,7 @@ describe('JwtPassportService', () => {
       expect(signMock).toHaveBeenCalledTimes(1);
 
       expect(signMock).toHaveBeenCalledWith({
-        username: user.username,
+        username: user.email,
         sub: user,
       });
 

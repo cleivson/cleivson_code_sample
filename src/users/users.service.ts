@@ -18,8 +18,6 @@ const saltRounds: number = 10;
  */
 @Injectable()
 export class UsersService extends TypeOrmCrudService<User> {
-  private readonly saltRounds = 10;
-
   constructor(@InjectRepository(User) repository: Repository<User>) {
     super(repository);
   }
@@ -120,12 +118,14 @@ export class UsersService extends TypeOrmCrudService<User> {
     if (user.id) {
       const existingUser = await this.repo.findOne(user.id);
       if (existingUser) {
+        // TODO It's more secure to return a status Ok and send an e-mail to the registered user with a password reset,
+        // this way a hacker wouldn't be able to discover the list of users
         this.throwDuplicateUserException(user);
       }
     }
   }
 
-  private translateError(e: any, userDto: Partial<User>) {
+  private translateError(e: any, userDto: DeepPartial<User>) {
     if (e instanceof QueryFailedError) {
       if ((e as any).code === 'ER_DUP_ENTRY') {
         this.throwDuplicateUserException(userDto);
@@ -136,7 +136,7 @@ export class UsersService extends TypeOrmCrudService<User> {
     throw e;
   }
 
-  private throwDuplicateUserException(userDto: Partial<User>) {
-    throw new DuplicateUserException(userDto.username);
+  private throwDuplicateUserException(userDto: DeepPartial<User>) {
+    throw new DuplicateUserException(userDto.email);
   }
 }

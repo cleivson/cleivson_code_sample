@@ -1,7 +1,9 @@
 import { HttpStatus, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from 'app.module';
+import { MailService } from 'mail';
 import { SeederModule, SeederService } from 'seeder';
+import { instance, mock } from 'ts-mockito';
 import { getConnection, Repository } from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { User, UserRoles } from 'users';
@@ -17,12 +19,18 @@ describe('UserController (e2e)', () => {
   let userRepository: Repository<User>;
   let request: req.SuperTest<req.Test>;
   let accessToken: string;
-  let validUserToInsert: User;
+  let validUserToInsert: Partial<User>;
+  let mailService: MailService;
 
   beforeAll(async () => {
+    mailService = mock(MailService);
+
     moduleFixture = await Test.createTestingModule({
       imports: [AppModule, SeederModule],
-    }).compile();
+    })
+      .overrideProvider(MailService)
+      .useValue(instance(mailService))
+      .compile();
 
     app = moduleFixture.createNestApplication();
     seederService = app.get(SeederService);
@@ -41,10 +49,12 @@ describe('UserController (e2e)', () => {
     accessToken = await getAccessToken(request, seederService.getAdminUserCredentials());
 
     validUserToInsert = {
-      username: 'test',
+      email: 'test@test.com',
       password: 'password',
       role: UserRoles.Admin,
       passwordHash: undefined,
+      firstName: 'Test',
+      lastName: 'User',
     };
   });
 
@@ -71,16 +81,16 @@ describe('UserController (e2e)', () => {
       describe('with query filter', () => {
         beforeEach(async () => {
           const usersToInsert: Array<QueryDeepPartialEntity<User>> = [
-            { username: 'user1', role: UserRoles.User, passwordHash: 'fakehash' },
-            { username: 'user2', role: UserRoles.User, passwordHash: 'fakehash' },
-            { username: 'admin1', role: UserRoles.Admin, passwordHash: 'fakehash' },
-            { username: 'admin2', role: UserRoles.Admin, passwordHash: 'fakehash' },
+            { email: 'user1', role: UserRoles.User, passwordHash: 'fakehash', firstName: 'User1', lastName: 'Test' },
+            { email: 'user2', role: UserRoles.User, passwordHash: 'fakehash', firstName: 'User2', lastName: 'Test' },
+            { email: 'admin1', role: UserRoles.Admin, passwordHash: 'fakehash', firstName: 'Admin1', lastName: 'Test' },
+            { email: 'admin2', role: UserRoles.Admin, passwordHash: 'fakehash', firstName: 'Admin2', lastName: 'Test' },
           ];
           await userRepository.insert(usersToInsert);
         });
 
         it('should return only filtered results', async () => {
-          const query = 'username != \'user2\' and (role = \'User\' or username = \'admin1\')';
+          const query = 'firstName != \'User2\' and (role = \'User\' or firstName = \'Admin1\')';
 
           return request.get(USERS_ROUTE)
             .auth(accessToken, { type: 'bearer' })
@@ -90,10 +100,10 @@ describe('UserController (e2e)', () => {
               const returnedUsers: User[] = response.body;
 
               expect(returnedUsers).toBeDefined();
-              expect(returnedUsers.find(user => user.username === 'admin2')).toBeUndefined();
-              expect(returnedUsers.find(user => user.username === 'user2')).toBeUndefined();
-              expect(returnedUsers.find(user => user.username === 'admin1')).toBeDefined();
-              expect(returnedUsers.find(user => user.username === 'user1')).toBeDefined();
+              expect(returnedUsers.find(user => user.email === 'admin2')).toBeUndefined();
+              expect(returnedUsers.find(user => user.email === 'user2')).toBeUndefined();
+              expect(returnedUsers.find(user => user.email === 'admin1')).toBeDefined();
+              expect(returnedUsers.find(user => user.email === 'user1')).toBeDefined();
 
               returnedUsers.forEach(expectResponseNotToContainPasswordInfo);
             });
@@ -108,7 +118,7 @@ describe('UserController (e2e)', () => {
           it('should return 409 (Conflict)', async () => {
             const existingUserCredentials = seederService.getRegularUserCredentials();
 
-            const existingUser = await userRepository.findOne({ username: existingUserCredentials.username });
+            const existingUser = await userRepository.findOne({ email: existingUserCredentials.email });
 
             return request.post(USERS_ROUTE)
               .auth(accessToken, { type: 'bearer' })
@@ -148,7 +158,7 @@ describe('UserController (e2e)', () => {
 
       describe('user without username', () => {
         it('should return 400 (Bad Request)', () => {
-          validUserToInsert.username = undefined;
+          validUserToInsert.email = undefined;
 
           return request.post(USERS_ROUTE)
             .auth(accessToken, { type: 'bearer' })
@@ -166,7 +176,7 @@ describe('UserController (e2e)', () => {
             .send(validUserToInsert)
             .expect(HttpStatus.CREATED);
 
-          const insertedUser = await userRepository.findOne({ username: validUserToInsert.username });
+          const insertedUser = await userRepository.findOne({ email: validUserToInsert.email });
 
           expect(insertedUser.role).toEqual(UserRoles.User);
         });
@@ -179,7 +189,7 @@ describe('UserController (e2e)', () => {
             .send(validUserToInsert)
             .expect(HttpStatus.CREATED);
 
-          const insertedUser = await userRepository.findOne({ username: validUserToInsert.username });
+          const insertedUser = await userRepository.findOne({ email: validUserToInsert.email });
 
           expect(insertedUser.password).toBeUndefined();
           expect(insertedUser.passwordHash).toBeDefined();
@@ -227,6 +237,9 @@ describe('UserController (e2e)', () => {
     });
 
     describe(`${USERS_ROUTE}/:id (PUT)`, () => {
+
+      // TODO test if PUT can erase fields with null
+
       describe('update only password', () => {
         beforeEach(async () => {
           await insertUserInRepository();
@@ -363,11 +376,11 @@ describe('UserController (e2e)', () => {
   };
 });
 
-function expectUsersToBeEqual(insertedUser: User, expectedUser: User) {
+function expectUsersToBeEqual(insertedUser: User, expectedUser: Partial<User>) {
   expect(insertedUser).toBeDefined();
   expect(insertedUser.id).toEqual(expectedUser.id);
   expect(insertedUser.role).toEqual(expectedUser.role);
-  expect(insertedUser.username).toEqual(expectedUser.username);
+  expect(insertedUser.email).toEqual(expectedUser.email);
 }
 
 function expectResponseNotToContainPasswordInfo(responseUser: any) {

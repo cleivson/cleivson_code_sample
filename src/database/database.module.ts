@@ -1,11 +1,12 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from 'config';
 import { getConnectionOptions } from 'typeorm';
 
-const CONNECTION_NAME_CONFIG_KEY = 'db_connectionName';
-const KEEP_CONNECTION_CONFIG_KEY = 'db_keepConnectionAlive';
+const CONNECTION_NAME_CONFIG_KEY = 'DB_CONNECTIONNAME';
+const KEEP_CONNECTION_CONFIG_KEY = 'DB_KEEPCONNECTIONALIVE';
 
+@Global()
 @Module({
   imports: [
     ConfigModule,

@@ -2,7 +2,9 @@ import { HttpStatus, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from 'app.module';
 import { JoggingEntry } from 'jogging';
+import { MailService } from 'mail';
 import { SeederModule, SeederService } from 'seeder';
+import { instance, mock } from 'ts-mockito';
 import { getConnection, Repository } from 'typeorm';
 import { User, UserRoles } from 'users';
 import { JOGGING_ROUTE } from '../constants';
@@ -20,11 +22,17 @@ describe('JoggingController (e2e)', () => {
   let accessToken: string;
   let validUserToInsert: User;
   let validJoggingEntriesToInsert: JoggingEntry[];
+  let mailService: MailService;
 
   beforeAll(async () => {
+    mailService = mock(MailService);
+
     moduleFixture = await Test.createTestingModule({
       imports: [AppModule, SeederModule],
-    }).compile();
+    })
+    .overrideProvider(MailService)
+    .useValue(instance(mailService))
+    .compile();
 
     app = moduleFixture.createNestApplication();
     seederService = app.get(SeederService);
@@ -44,10 +52,13 @@ describe('JoggingController (e2e)', () => {
     accessToken = await getAccessToken(request, seederService.getAdminUserCredentials());
 
     validUserToInsert = {
-      username: 'test',
+      firstName: 'User',
+      lastName: 'Test',
+      email: 'test',
       password: 'password',
       role: UserRoles.Admin,
-      passwordHash: 'fakepassword',
+      verified: true,
+      locked: false,
     };
 
     validJoggingEntriesToInsert = [

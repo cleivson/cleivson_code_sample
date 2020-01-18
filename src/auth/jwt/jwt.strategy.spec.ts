@@ -38,7 +38,7 @@ describe('JwtPassportStrategy', () => {
   });
 
   describe('.validate()', () => {
-    const expectedLoggedUser: LoggedUserDto = { username: 'testuser', id: 23, role: UserRoles.User };
+    const expectedLoggedUser: LoggedUserDto = { email: 'testuser', id: 23, role: UserRoles.User };
     const tokenPayload: TokenPayload = { username: 'it doesnt matter. should only redrive to mock', sub: null };
 
     it('should validate token with service', async () => {

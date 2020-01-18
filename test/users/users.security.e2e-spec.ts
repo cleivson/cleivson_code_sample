@@ -1,9 +1,12 @@
 import { HttpStatus, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from 'app.module';
+import { CreateUserRequestDto } from 'auth/dto';
+import { MailService } from 'mail';
 import { SeederModule, SeederService } from 'seeder';
+import { instance, mock } from 'ts-mockito';
 import { getConnection, Repository } from 'typeorm';
-import { CreateUserRequestDto, User, UserRoles } from 'users';
+import { User, UserRoles } from 'users';
 import { USERS_ROUTE } from '../constants';
 import { getAccessToken } from '../utils/helper.functions';
 
@@ -14,14 +17,20 @@ let moduleFixture: TestingModule;
 let seederService: SeederService;
 let userRepository: Repository<User>;
 let request: req.SuperTest<req.Test>;
+let mailService: MailService;
 
 describe('UserController Security (e2e)', () => {
-  const validUserToInsert: Partial<User> = { username: 'test', password: 'test', role: UserRoles.User };
+  const validUserToInsert: User = { firstName: 'User', lastName: 'test', email: 'test@test.com', password: 'test', role: UserRoles.User };
 
   beforeAll(async () => {
+    mailService = mock(MailService);
+
     moduleFixture = await Test.createTestingModule({
       imports: [AppModule, SeederModule],
-    }).compile();
+    })
+      .overrideProvider(MailService)
+      .useValue(instance(mailService))
+      .compile();
 
     app = moduleFixture.createNestApplication();
     seederService = app.get(SeederService);
@@ -76,7 +85,7 @@ describe('UserController Security (e2e)', () => {
 
   describe('change role', () => {
     it('should give access to new role features', async () => {
-      const userCredential = { username: validUserToInsert.username, password: validUserToInsert.password };
+      const userCredential: User = validUserToInsert;
 
       const adminAccessToken = await getAccessToken(request, seederService.getAdminUserCredentials());
 
@@ -89,6 +98,8 @@ describe('UserController Security (e2e)', () => {
         .expect(HttpStatus.CREATED)
         .expect(response => userId = response.body.id);
 
+      await verifyUser(userCredential);
+
       let userAccessToken = await getAccessToken(request, userCredential);
 
       // The regular user should not have access to get list all users
@@ -97,7 +108,7 @@ describe('UserController Security (e2e)', () => {
         .expect(HttpStatus.FORBIDDEN);
 
       // Change user's role to UserManager
-      await request.put(`${USERS_ROUTE}/${userId}`)
+      await request.patch(`${USERS_ROUTE}/${userId}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send({ role: UserRoles.UserManager })
         .expect(HttpStatus.OK);
@@ -123,8 +134,8 @@ describe('UserController Security (e2e)', () => {
 });
 
 function testRootEndpoints(validUserToInsert: Partial<User>,
-                           expectAuthorized: boolean,
-                           getCredentials?: (seederService: SeederService) => CreateUserRequestDto) {
+  expectAuthorized: boolean,
+  getCredentials?: (seederService: SeederService) => CreateUserRequestDto) {
   let accessToken: string;
   let failureStatus: HttpStatus;
   let credentials: CreateUserRequestDto;
@@ -166,8 +177,12 @@ function testSameUserEndpoints(expectAuthorized: boolean, getCredentials?: (seed
     beforeEach(async () => {
       credentials = getCredentials(seederService);
       accessToken = await getAccessToken(request, credentials);
-      loggedUser = await userRepository.findOne({ username: credentials.username });
+      loggedUser = await userRepository.findOne({ email: credentials.email });
       loggedUser.passwordHash = undefined;
+      loggedUser.verified = undefined;
+      loggedUser.locked = undefined;
+      loggedUser.picture = undefined;
+
       loggedUserRoute = `${USERS_ROUTE}/${loggedUser.id}`;
     });
 
@@ -198,8 +213,8 @@ function testSameUserEndpoints(expectAuthorized: boolean, getCredentials?: (seed
 }
 
 function testDifferentUserEndpoints(validUserToInsert: Partial<User>,
-                                    expectAuthorized: boolean,
-                                    getCredentials?: (seederService: SeederService) => CreateUserRequestDto) {
+  expectAuthorized: boolean,
+  getCredentials?: (seederService: SeederService) => CreateUserRequestDto) {
   let accessToken: string;
   let credentials: CreateUserRequestDto;
   let validUserToUpdate: Partial<User>;
@@ -215,6 +230,9 @@ function testDifferentUserEndpoints(validUserToInsert: Partial<User>,
       validUserToUpdate = { ...validUserToInsert, passwordHash: 'fakehashedpassword' };
       await userRepository.insert(validUserToUpdate);
       validUserToUpdate.passwordHash = undefined;
+      validUserToUpdate.verified = undefined;
+      validUserToUpdate.locked = undefined;
+      validUserToUpdate.picture = undefined;
 
       specificUserRoute = `${USERS_ROUTE}/${validUserToUpdate.id}`;
     });
@@ -270,7 +288,9 @@ async function testPatchUser(expectAuthorized: boolean, specificUserRoute: strin
   await request.patch(specificUserRoute)
     .auth(accessToken, { type: 'bearer' })
     .send(validUserToUpdate)
-    .expect(expectedStatus);
+    .expect(response => {
+      expect(response.status).toBe(expectedStatus);
+    });
 }
 
 async function testPutUser(expectAuthorized: boolean, specificUserRoute: string, accessToken: string, validUserToUpdate: Partial<User>) {
@@ -280,5 +300,13 @@ async function testPutUser(expectAuthorized: boolean, specificUserRoute: string,
   await request.put(specificUserRoute)
     .auth(accessToken, { type: 'bearer' })
     .send(validUserToUpdate)
-    .expect(expectedStatus);
+    .expect(response => {
+      expect(response.status).toBe(expectedStatus);
+    });
+}
+
+async function verifyUser(userCredential: User) {
+  const createdUser = await userRepository.findOne({ email: userCredential.email });
+  createdUser.verified = true;
+  await userRepository.save(createdUser);
 }

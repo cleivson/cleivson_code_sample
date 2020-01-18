@@ -1,6 +1,7 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { LoggedUserDto, UserRoles, UsersService } from 'users';
+import { deepEqual, spy, verify, when } from 'ts-mockito';
+import { LoggedUserDto, User, UserRoles, UsersService } from 'users';
 import { BasicPassportStrategy } from './basic-passport-strategy';
 
 describe('BasicPassportStrategy', () => {
@@ -15,7 +16,7 @@ describe('BasicPassportStrategy', () => {
       }],
     }).compile();
 
-    usersService = module.get<UsersService>(UsersService);
+    usersService = spy(module.get<UsersService>(UsersService));
     strategy = module.get<BasicPassportStrategy>(BasicPassportStrategy);
   });
 
@@ -24,58 +25,46 @@ describe('BasicPassportStrategy', () => {
   });
 
   describe('.validate()', () => {
-    const username = 'testuser';
+    const userEmail = 'testuser';
     const password = 'password';
 
-    const expectedLoggedUser: LoggedUserDto = { username, id: 23, role: UserRoles.User };
+    const expectedLoggedUser: LoggedUserDto = { email: userEmail, id: 23, role: UserRoles.User, verified: true, locked: true };
 
     it('should throw exception for invalid user', async () => {
-      const findUserMock = jest.spyOn(usersService, 'findOne');
-      findUserMock.mockImplementationOnce(() => Promise.resolve(null));
+      when(usersService.findOne(deepEqual({ email: userEmail }))).thenResolve(null);
 
-      await expect(strategy.validate(username, password))
+      await expect(strategy.validate(userEmail, password))
         .rejects
         .toThrowError(UnauthorizedException);
 
-      expect(findUserMock).toHaveBeenCalledWith({ username });
-
-      findUserMock.mockRestore();
+      verify(usersService.findOne(deepEqual({ email: userEmail }))).once();
     });
 
     it('should throw exception for invalid password', async () => {
       const passwordHash = 'klasdma';
-      const user = { passwordHash, password, ...expectedLoggedUser };
+      const user: User = { passwordHash, password, ...expectedLoggedUser };
 
-      const findUserMock = jest.spyOn(usersService, 'findOne');
-      findUserMock.mockImplementationOnce(() => Promise.resolve(user));
+      when(usersService.findOne(deepEqual({ email: userEmail }))).thenResolve(user);
+      when(usersService.verifyPassword(password, user)).thenResolve(false);
 
-      const verifyPasswordMock = jest.spyOn(usersService, 'verifyPassword');
-      verifyPasswordMock.mockImplementation(() => Promise.resolve(false));
-
-      await expect(strategy.validate(username, password))
+      await expect(strategy.validate(userEmail, password))
         .rejects
         .toThrowError(UnauthorizedException);
 
-      expect(findUserMock).toHaveBeenCalledWith({ username });
-      expect(verifyPasswordMock).toHaveBeenCalledWith(password, user);
-
-      findUserMock.mockRestore();
+      verify(usersService.findOne(deepEqual({ email: userEmail }))).once();
+      verify(usersService.verifyPassword(password, user)).once();
     });
 
     it('should return logged user for right credentials', async () => {
       const passwordHash = 'klasdma';
 
-      const findUserMock = jest.spyOn(usersService, 'findOne');
-      findUserMock.mockImplementationOnce(() => Promise.resolve({ passwordHash, password, ...expectedLoggedUser }));
+      when(usersService.findOne(deepEqual({ email: userEmail }))).thenResolve(expectedLoggedUser);
 
-      const verifyPasswordMock = jest.spyOn(usersService, 'verifyPassword');
-      verifyPasswordMock.mockImplementation(() => Promise.resolve(true));
+      when(usersService.verifyPassword(password, expectedLoggedUser)).thenResolve(true);
 
-      const actualLoggedUser = await strategy.validate(username, password);
+      const actualLoggedUser = await strategy.validate(userEmail, password);
 
       expect(actualLoggedUser).toEqual(expectedLoggedUser);
-
-      findUserMock.mockRestore();
     });
   });
 });

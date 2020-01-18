@@ -3,11 +3,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from 'app.module';
 import { SeederModule, SeederService } from 'seeder';
 import * as req from 'supertest';
+import { instance, mock } from 'ts-mockito';
 import { getConnection, Repository } from 'typeorm';
 import { User, UserRoles } from 'users';
+import { CreateUserRequestDto } from '../../src/auth/dto';
+import { MailService } from '../../src/mail';
 
 const LOGIN_ROUTE = '/account/login';
-const REGISTER_ROUTE = '/account';
+const REGISTER_ROUTE = '/account/register';
 
 describe('AccountController (e2e)', () => {
   let app: INestApplication;
@@ -15,11 +18,17 @@ describe('AccountController (e2e)', () => {
   let seederService: SeederService;
   let userRespository: Repository<User>;
   let request: req.SuperTest<req.Test>;
+  let mailService: MailService;
 
   beforeAll(async () => {
+    mailService = mock(MailService);
+
     moduleFixture = await Test.createTestingModule({
       imports: [AppModule, SeederModule],
-    }).compile();
+    })
+      .overrideProvider(MailService)
+      .useValue(instance(mailService))
+      .compile();
 
     app = moduleFixture.createNestApplication();
     seederService = app.get(SeederService);
@@ -47,7 +56,7 @@ describe('AccountController (e2e)', () => {
 
       return request
         .post(LOGIN_ROUTE)
-        .auth(credentials.username, 'wrongpassword', { type: 'basic' })
+        .auth(credentials.email, 'wrongpassword', { type: 'basic' })
         .expect(HttpStatus.UNAUTHORIZED);
     });
 
@@ -57,7 +66,7 @@ describe('AccountController (e2e)', () => {
 
         return request
           .post(LOGIN_ROUTE)
-          .auth(credentials.username, credentials.password, { type: 'basic' })
+          .auth(credentials.email, credentials.password, { type: 'basic' })
           .expect(HttpStatus.CREATED)
           .expect(response => {
             const access_token = response.body.access_token;
@@ -72,7 +81,7 @@ describe('AccountController (e2e)', () => {
 
         return request
           .post(LOGIN_ROUTE)
-          .auth(credentials.username, credentials.password, { type: 'basic' })
+          .auth(credentials.email, credentials.password, { type: 'basic' })
           .expect(HttpStatus.CREATED)
           .expect(response => {
             const access_token = response.body.access_token;
@@ -87,7 +96,7 @@ describe('AccountController (e2e)', () => {
 
         return request
           .post(LOGIN_ROUTE)
-          .auth(credentials.username, credentials.password, { type: 'basic' })
+          .auth(credentials.email, credentials.password, { type: 'basic' })
           .expect(HttpStatus.CREATED)
           .expect(response => {
             const access_token = response.body.access_token;
@@ -101,14 +110,18 @@ describe('AccountController (e2e)', () => {
   });
 
   describe(`${REGISTER_ROUTE} (POST)`, () => {
+    let validCredentials: CreateUserRequestDto;
+
+    beforeEach(() => {
+      validCredentials = { email: 'testuser@test.com', password: 'foobar', firstName: 'User', lastName: 'Test' };
+    });
+
     describe('with role set', () => {
       it('should return 400 (BAD REQUEST)', () => {
-        const username = 'testuser';
-        const password = 'foobar';
 
         return request
           .post(REGISTER_ROUTE)
-          .send({ username, password, role: UserRoles.Admin })
+          .send({ ...validCredentials, role: UserRoles.Admin })
           .expect(HttpStatus.BAD_REQUEST);
       });
     });
@@ -117,7 +130,7 @@ describe('AccountController (e2e)', () => {
       it('should return 409 (CONFLICT)', () => {
         return request
           .post(REGISTER_ROUTE)
-          .send(seederService.getRegularUserCredentials())
+          .send({ ...validCredentials, ...seederService.getRegularUserCredentials() })
           .expect(HttpStatus.CONFLICT);
       });
     });
@@ -131,25 +144,48 @@ describe('AccountController (e2e)', () => {
     });
 
     describe('valid username and password', () => {
-      const newUsername = 'testuser';
-      const newPassword = 'foobar';
-
-      it('should create the user as regular user and be able to login', async () => {
+      beforeEach(async () => {
         await request
           .post(REGISTER_ROUTE)
-          .send({ username: newUsername, password: newPassword })
+          .send(validCredentials)
           .expect(HttpStatus.CREATED)
           .expect(response => {
             expectResponseNotToContainPasswordInfo(response);
           });
+      });
 
-        const createdUser = await userRespository.findOne({ username: newUsername });
+      it('should create the user as regular user', async () => {
+        const createdUser = await userRespository.findOne({ email: validCredentials.email });
 
         expect(createdUser.role).toEqual(UserRoles.User);
+      });
 
+      it('should create the user as unverified', async () => {
+        const createdUser = await userRespository.findOne({ email: validCredentials.email });
+
+        expect(createdUser.verified).toBeFalsy();
+      });
+
+      it('should not be able to login until verified', async () => {
         await request.post(LOGIN_ROUTE)
-          .auth(newUsername, newPassword, { type: 'basic'})
-          .expect(HttpStatus.CREATED);
+          .auth(validCredentials.email, validCredentials.password, { type: 'basic' })
+          .expect(response => {
+            expect(response.status).toBe(HttpStatus.UNAUTHORIZED);
+            expect(response.body.message).toBe('E-mail not verified');
+          });
+      });
+
+      describe('with verified email', () => {
+        beforeEach(async () => {
+          const createdUser = await userRespository.findOne({ email: validCredentials.email });
+          createdUser.verified = true;
+          await userRespository.save(createdUser);
+        });
+        it('should be able to login', async () => {
+          await request.post(LOGIN_ROUTE)
+            .auth(validCredentials.email, validCredentials.password, { type: 'basic' })
+            .expect(HttpStatus.CREATED);
+        });
       });
     });
   });

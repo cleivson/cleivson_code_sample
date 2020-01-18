@@ -22,12 +22,24 @@ export class ConfigService {
    * @returns The string value for the specified configuration.
    */
   get(key: string, optional: boolean = false): string {
-    const configValue = this.envConfig[key];
+    let configValue = this.getFromConfigFile(key);
+
+    if (!configValue) {
+      configValue = this.getFromEnvironment(key);
+    }
 
     if (!configValue && !optional) {
       throw new Error(`Configuration key "${key}" not found.`);
     }
 
     return configValue;
+  }
+
+  private getFromConfigFile(key: string): string {
+    return this.envConfig[key];
+  }
+
+  private getFromEnvironment(key: string): string {
+    return process.env[key];
   }
 }

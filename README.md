@@ -26,6 +26,8 @@ Not yet supported because of [bcrypt](https://www.npmjs.com/package/bcrypt) depe
 
 In order to run the app, you need no create a database (only tested with MySql until now) and put its configurations in the file ormconfig.json.
 
+Also, you have to setup the API Key from [SendGrid](https://sendgrid.com/). To do this, follow the steps in: https://app.sendgrid.com/guide/integrate/langs/nodejs
+
 ```bash
 # development
 $ npm run start

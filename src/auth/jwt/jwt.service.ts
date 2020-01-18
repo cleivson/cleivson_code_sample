@@ -17,7 +17,7 @@ export class JwtPassportService {
    * @returns The signed bearer token to be used to authenticate into future calls of the API.
    */
   async generateToken(user: LoggedUserDto) {
-    const payload: TokenPayload = { username: user.username, sub: user };
+    const payload: TokenPayload = { username: user.email, sub: user };
 
     return {
       access_token: this.jwtService.sign(payload),
