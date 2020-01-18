@@ -48,6 +48,10 @@ export class UsersService extends TypeOrmCrudService<User> {
    * @returns The updated user.
    */
   async updateOne(req: CrudRequest, dto: DeepPartial<User>): Promise<User> {
+    if (this.checkUserEmailChanged(dto)) {
+      dto.verified = false;
+    }
+
     try {
       return await super.updateOne(req, dto);
     } catch (e) {
@@ -63,6 +67,10 @@ export class UsersService extends TypeOrmCrudService<User> {
    * @returns The saved user.
    */
   async replaceOne(req: CrudRequest, dto: DeepPartial<User>): Promise<User> {
+    if (this.checkUserEmailChanged(dto)) {
+      dto.verified = false;
+    }
+
     try {
       return await super.replaceOne(req, dto);
     } catch (e) {
@@ -123,6 +131,17 @@ export class UsersService extends TypeOrmCrudService<User> {
         this.throwDuplicateUserException(user);
       }
     }
+  }
+
+  private async checkUserEmailChanged(user: DeepPartial<User>): Promise<boolean> {
+    // TODO Validate these requirements
+    if (!user.email || !user.id) {
+      return false;
+    }
+
+    const existingUser = await this.repo.findOne(user.id);
+
+    return existingUser && existingUser.email !== user.email;
   }
 
   private translateError(e: any, userDto: DeepPartial<User>) {
