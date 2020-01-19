@@ -10,7 +10,8 @@
     "entities": [
       "dist/**/*.entity{.ts,.js}"
     ],
-    "synchronize": true
+    "synchronize": true,
+    "max_allowed_packet": "100M"
   },
   {
     "name": "test",
@@ -24,7 +25,8 @@
     "entities": [
       "dist/**/*.entity{.ts,.js}"
     ],
-    "dropSchema": true,
-    "synchronize": true
+    "synchronize": true,
+    "max_allowed_packet": "100M",
+    "dropSchema": true
   }
 ]

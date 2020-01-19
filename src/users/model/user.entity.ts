@@ -64,4 +64,11 @@ export class User {
 
   @Column()
   passwordHash?: string;
+
+  // TODO Move the picture to a separate entity
+  /**
+   * The binary file representing the profile picture.
+   */
+  @Column({ type: 'mediumblob', nullable: true })
+  picture?: ArrayBufferLike;
 }

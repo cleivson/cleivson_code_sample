@@ -1,11 +1,12 @@
-import { Body, Controller, ForbiddenException, Get, Param, ParseIntPipe, Post, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Crud, CrudController, CrudRequest, CrudRequestInterceptor, Override, ParsedBody, ParsedRequest } from '@nestjsx/crud';
 import { LoggedUser } from 'auth/decorators/logged-user.decorator';
-import { propertyOf, throwIfBodyOverridesPath } from 'common';
+import { propertyOf } from 'common';
 import { ParsedQuery } from 'query';
 import { AdvancedQuery } from 'query/advanced-query';
+import { checkPermission, checkPermissionToUpdate } from './controller-permissions-checker';
 import { Roles } from './decorators';
 import { LoggedUserDto } from './dto';
 import { RolesGuard } from './guards';
@@ -24,6 +25,7 @@ const USER_ID = 'id';
   query: {
     exclude: [
       propertyOf<User>('passwordHash'),
+      propertyOf<User>('picture'),
     ],
   },
   validation: {
@@ -47,7 +49,7 @@ export class UsersController implements CrudController<User> {
   async createOne(@ParsedRequest() req: CrudRequest, @ParsedBody() dto: User, @LoggedUser() loggedUser: LoggedUserDto)
     : Promise<Partial<User>> {
 
-    this.checkPermission(loggedUser, dto);
+    checkPermission(loggedUser, dto);
 
     return this.service.createOne(req, dto);
   }
@@ -56,7 +58,7 @@ export class UsersController implements CrudController<User> {
   async getOne(@ParsedRequest() req: CrudRequest, @LoggedUser() loggedUser: LoggedUserDto): Promise<void | User> {
     const resultUser = await this.base.getOneBase(req);
 
-    this.checkPermission(loggedUser, resultUser);
+    checkPermission(loggedUser, resultUser);
 
     return resultUser;
   }
@@ -65,7 +67,7 @@ export class UsersController implements CrudController<User> {
   async deleteOne(@ParsedRequest() req: CrudRequest, @LoggedUser() loggedUser: LoggedUserDto): Promise<void | User> {
     const existingUser = await this.service.getOne(req);
 
-    this.checkPermission(loggedUser, existingUser);
+    checkPermission(loggedUser, existingUser);
 
     return this.service.deleteOne(req);
   }
@@ -75,7 +77,7 @@ export class UsersController implements CrudController<User> {
                    @ParsedBody() dto: User,
                    @LoggedUser() loggedUser: LoggedUserDto,
                    @Param(USER_ID, ParseIntPipe) paramId: number): Promise<Partial<User>> {
-    await this.checkPermissionToUpdate(req, dto, loggedUser, paramId);
+    await checkPermissionToUpdate(req, dto, loggedUser, paramId, this.service);
 
     return this.service.replaceOne(req, dto);
   }
@@ -85,7 +87,7 @@ export class UsersController implements CrudController<User> {
                   @ParsedBody() dto: User,
                   @LoggedUser() loggedUser: LoggedUserDto,
                   @Param(USER_ID, ParseIntPipe) paramId: number): Promise<Partial<User>> {
-    await this.checkPermissionToUpdate(req, dto, loggedUser, paramId);
+    await checkPermissionToUpdate(req, dto, loggedUser, paramId, this.service);
 
     return this.service.updateOne(req, dto);
   }
@@ -101,32 +103,5 @@ export class UsersController implements CrudController<User> {
   @ApiQuery({ name: 'sort', type: 'string', isArray: true, required: false })
   async getMany(@ParsedRequest() req: CrudRequest, @ParsedQuery() query: AdvancedQuery<User>): Promise<User[]> {
     return this.service.getUsers(req, query);
-  }
-
-  private async checkPermissionToUpdate(req: CrudRequest, dto: User, loggedUser: LoggedUserDto, paramId: number) {
-    throwIfBodyOverridesPath(req, dto);
-
-    this.checkPermission(loggedUser, dto);
-
-    const existingUser = await this.service.findOne(paramId);
-
-    if (existingUser) {
-      this.checkPermission(loggedUser, existingUser);
-    }
-  }
-
-  private checkPermission(loggedUser: LoggedUserDto, userToBeModified: User) {
-    if (userToBeModified) {
-      const managerTryingToEditAdmin = loggedUser.role === UserRoles.UserManager && userToBeModified.role === UserRoles.Admin;
-      const regularUserTryingToEditAnotherUser = this.isRegularUserEditingOtherUser(loggedUser, userToBeModified.id);
-
-      if (managerTryingToEditAdmin || regularUserTryingToEditAnotherUser) {
-        throw new ForbiddenException();
-      }
-    }
-  }
-
-  private isRegularUserEditingOtherUser(loggedUser: LoggedUserDto, pathUserId: number) {
-    return loggedUser.role === UserRoles.User && pathUserId !== loggedUser.id;
   }
 }

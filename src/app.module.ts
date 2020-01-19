@@ -8,10 +8,11 @@ import { JoggingModule } from './jogging';
 import { MailModule } from './mail/mail.module';
 import { QueryModule } from './query';
 import { SeederModule } from './seeder';
+import { UserProfilePictureModule } from './user-profile-picture/user-profile-picture.module';
 import { UserModule } from './users';
 
 @Module({
-  imports: [UserModule, AuthModule, ConfigModule, DatabaseModule, SeederModule, QueryModule, JoggingModule, MailModule, InviteModule],
+  imports: [UserModule, AuthModule, ConfigModule, DatabaseModule, SeederModule, QueryModule, JoggingModule, MailModule, InviteModule, UserProfilePictureModule],
   providers: [{
     provide: APP_PIPE,
     useFactory: () => {

@@ -1,3 +1,4 @@
+export * from './controller-permissions-checker';
 export * from './decorators';
 export * from './dto';
 export * from './exceptions';
