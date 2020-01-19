@@ -1,11 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from 'users';
-import { VerificationTokenNotFoundException } from './exceptions';
-import { UserAlreadyVerifiedException } from './exceptions/user-already-verified.exception';
-import { VerificationTokenExpiredException } from './exceptions/verification-token-expired-exception';
-import { VerificationToken } from './model';
+import { EntityManager, Repository } from 'typeorm';
+import { UserAlreadyVerifiedException, VerificationTokenExpiredException, VerificationTokenNotFoundException } from './exceptions';
+import { MailTemplateService } from './mail-template';
+import { User, VerificationToken } from './model';
 import moment = require('moment');
 
 /**
@@ -13,18 +11,28 @@ import moment = require('moment');
  */
 @Injectable()
 export class VerificationService {
-  constructor(@InjectRepository(VerificationToken) private readonly verificationTokenRepository: Repository<VerificationToken>) { }
+  constructor(@InjectRepository(VerificationToken) private readonly verificationTokenRepository: Repository<VerificationToken>,
+              private readonly mailService: MailTemplateService) { }
 
   /**
    * Creates a new verification token for the user.
-   * @param newUser The user with a pending verification
+   * @param user The user with a pending verification
    */
-  async createVerificationToken(newUser: User): Promise<VerificationToken> {
+  async generateValidationToken(user: User): Promise<VerificationToken> {
     const expirationDate: moment.Moment = this.getExpirationDate();
 
-    const verificationToken: VerificationToken = new VerificationToken(newUser, expirationDate.toDate());
+    const verificationToken: VerificationToken = new VerificationToken(user, expirationDate.toDate());
 
-    return this.verificationTokenRepository.save(verificationToken);
+    let savedVerificationToken: VerificationToken;
+    await this.verificationTokenRepository.manager.transaction(async transactionManager => {
+      savedVerificationToken = await this.verificationTokenRepository.save(verificationToken);
+
+      this.markUserAsUnverified(user, transactionManager);
+    });
+
+    await this.mailService.sendAccountValidationMail(savedVerificationToken, user);
+
+    return savedVerificationToken;
   }
 
   /**
@@ -39,7 +47,7 @@ export class VerificationService {
   async validateToken(token: string, userEmail: string): Promise<User> {
     const verificationToken = await this.getVerificationToken(token, userEmail);
 
-    this. checkTokenIsValid(verificationToken);
+    this.checkTokenIsValid(verificationToken);
 
     await this.markUserAsVerified(verificationToken);
 
@@ -84,6 +92,14 @@ export class VerificationService {
     const usersRepository = this.verificationTokenRepository.manager.getRepository(User);
 
     const user = verificationToken.user;
+    user.verified = true;
+
+    return usersRepository.save(user);
+  }
+
+  private async markUserAsUnverified(user: User, transactionManager: EntityManager): Promise<User> {
+    const usersRepository = transactionManager.getRepository(User);
+
     user.verified = true;
 
     return usersRepository.save(user);

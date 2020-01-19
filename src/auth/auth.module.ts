@@ -1,16 +1,14 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from 'users';
+import { MailTemplateService } from '../users/mail-template';
 import { AccountController } from './account.controller';
+import { AccountService } from './account.service';
 import { BasicAuthenticationModule } from './basic';
 import { JwtStrategyModule } from './jwt';
-import { MailTemplateService } from './mail-template';
-import { VerificationToken } from './model';
-import { VerificationService } from './verification.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([VerificationToken]), BasicAuthenticationModule, JwtStrategyModule, UserModule],
-  providers: [MailTemplateService, VerificationService],
+  imports: [BasicAuthenticationModule, JwtStrategyModule, UserModule],
+  providers: [MailTemplateService, AccountService],
   controllers: [AccountController],
 })
 export class AuthModule {}

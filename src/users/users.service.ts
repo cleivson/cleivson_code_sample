@@ -6,7 +6,9 @@ import * as bcrypt from 'bcrypt';
 import { AdvancedQuery, TypeormQueryBuilderVisitor } from 'query';
 import { DeepPartial, QueryFailedError, Repository } from 'typeorm';
 import { DuplicateUserException } from './exceptions/duplicate-user.exception';
+import { MailTemplateService } from './mail-template';
 import { User } from './model';
+import { VerificationService } from './verification.service';
 
 /**
  * Number of salt rounds to be used when hashing the password.
@@ -18,8 +20,29 @@ const saltRounds: number = 10;
  */
 @Injectable()
 export class UsersService extends TypeOrmCrudService<User> {
-  constructor(@InjectRepository(User) repository: Repository<User>) {
+  constructor(@InjectRepository(User) repository: Repository<User>,
+              private readonly verificationService: VerificationService,
+              private readonly mailService: MailTemplateService) {
     super(repository);
+  }
+
+  /**
+   * Invites a new user based on his/her email.
+   * @param email The email of the user to be invited.
+   * @throws DuplicateUserException if there is already an user with the desired email.
+   */
+  async invite(email: string) {
+    const existingUser = await this.findOne({ email }, { select: ['id'] });
+
+    if (existingUser) {
+      throw new DuplicateUserException(email);
+    }
+
+    await this.mailService.sendInvitationMail(email);
+  }
+
+  async validateEmail(token: string, userEmail: string) {
+    await this.verificationService.validateToken(token, userEmail);
   }
 
   /**
@@ -33,7 +56,11 @@ export class UsersService extends TypeOrmCrudService<User> {
     await this.checkExistingUserId(user);
 
     try {
-      return await super.createOne(req, user);
+      const savedUser =  await super.createOne(req, user);
+
+      this.verificationService.generateValidationToken(savedUser);
+
+      return savedUser;
     } catch (e) {
       this.translateError(e, user);
     }
@@ -48,12 +75,14 @@ export class UsersService extends TypeOrmCrudService<User> {
    * @returns The updated user.
    */
   async updateOne(req: CrudRequest, dto: DeepPartial<User>): Promise<User> {
-    if (this.checkUserEmailChanged(dto)) {
-      dto.verified = false;
-    }
+    const oldEmail = await this.getCurrentEmail(dto);
 
     try {
-      return await super.updateOne(req, dto);
+      const savedUser = await super.updateOne(req, dto);
+
+      this.checkEmailChanged(savedUser, oldEmail);
+
+      return savedUser;
     } catch (e) {
       this.translateError(e, dto);
     }
@@ -67,12 +96,14 @@ export class UsersService extends TypeOrmCrudService<User> {
    * @returns The saved user.
    */
   async replaceOne(req: CrudRequest, dto: DeepPartial<User>): Promise<User> {
-    if (this.checkUserEmailChanged(dto)) {
-      dto.verified = false;
-    }
+    const oldEmail = await this.getCurrentEmail(dto);
 
     try {
-      return await super.replaceOne(req, dto);
+      const savedUser = await super.replaceOne(req, dto);
+
+      this.checkEmailChanged(savedUser, oldEmail);
+
+      return savedUser;
     } catch (e) {
       this.translateError(e, dto);
     }
@@ -91,7 +122,7 @@ export class UsersService extends TypeOrmCrudService<User> {
 
     TypeormQueryBuilderVisitor.applyQuery(query, queryBuilder);
 
-    const { raw, entities } = await queryBuilder.getRawAndEntities();
+    const { entities } = await queryBuilder.getRawAndEntities();
 
     return entities;
   }
@@ -133,15 +164,22 @@ export class UsersService extends TypeOrmCrudService<User> {
     }
   }
 
-  private async checkUserEmailChanged(user: DeepPartial<User>): Promise<boolean> {
-    // TODO Validate these requirements
-    if (!user.email || !user.id) {
-      return false;
+  private async getCurrentEmail(dto: DeepPartial<User>) {
+    const existingUser = await this.findOne(dto.id);
+
+    let oldEmail: string;
+
+    if (existingUser) {
+      oldEmail = existingUser.email;
     }
 
-    const existingUser = await this.repo.findOne(user.id);
+    return oldEmail;
+  }
 
-    return existingUser && existingUser.email !== user.email;
+  private checkEmailChanged(savedUser: User, oldEmail: string) {
+    if (savedUser.email !== oldEmail) {
+      this.verificationService.generateValidationToken(savedUser);
+    }
   }
 
   private translateError(e: any, userDto: DeepPartial<User>) {

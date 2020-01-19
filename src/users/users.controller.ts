@@ -1,18 +1,19 @@
-import { Controller, ForbiddenException, Get, Param, ParseIntPipe, Patch, Put, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Param, ParseIntPipe, Post, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Crud, CrudController, CrudRequest, CrudRequestInterceptor, Override, ParsedBody, ParsedRequest } from '@nestjsx/crud';
 import { LoggedUser } from 'auth/decorators/logged-user.decorator';
 import { propertyOf, throwIfBodyOverridesPath } from 'common';
 import { ParsedQuery } from 'query';
 import { AdvancedQuery } from 'query/advanced-query';
 import { Roles } from './decorators';
-import { LoggedUserDto } from './dto';
+import { InviteUserRequest, LoggedUserDto } from './dto';
 import { RolesGuard } from './guards';
 import { User, UserRoles } from './model';
 import { UsersService } from './users.service';
 
 const USER_ID = 'id';
+
 @Crud({
   model: {
     type: User,
@@ -69,7 +70,6 @@ export class UsersController implements CrudController<User> {
     return this.service.deleteOne(req);
   }
 
-  @Put()
   @Override()
   async replaceOne(@ParsedRequest() req: CrudRequest,
                    @ParsedBody() dto: User,
@@ -80,7 +80,6 @@ export class UsersController implements CrudController<User> {
     return this.service.replaceOne(req, dto);
   }
 
-  @Patch()
   @Override()
   async updateOne(@ParsedRequest() req: CrudRequest,
                   @ParsedBody() dto: User,
@@ -92,16 +91,23 @@ export class UsersController implements CrudController<User> {
   }
 
   @Get()
+  @Override('getManyBase')
+  @UseInterceptors(CrudRequestInterceptor)
   @Roles(UserRoles.Admin, UserRoles.UserManager)
   @ApiOperation({ summary: 'Get many Users' })
   @ApiQuery({ name: 'query', type: 'string', required: false })
   @ApiQuery({ name: 'limit', type: 'number', required: false, schema: { minimum: 1 } })
   @ApiQuery({ name: 'page', type: 'number', required: false, schema: { minimum: 1 } })
   @ApiQuery({ name: 'sort', type: 'string', isArray: true, required: false })
-  @Override('getManyBase')
-  @UseInterceptors(CrudRequestInterceptor)
   async getMany(@ParsedRequest() req: CrudRequest, @ParsedQuery() query: AdvancedQuery<User>): Promise<User[]> {
     return this.service.getUsers(req, query);
+  }
+
+  @Post('/invite')
+  @Roles(UserRoles.Admin)
+  @ApiBody({ type: InviteUserRequest })
+  async invite(@Body() inviteRequest: InviteUserRequest) {
+    this.service.invite(inviteRequest.email);
   }
 
   private async checkPermissionToUpdate(req: CrudRequest, dto: User, loggedUser: LoggedUserDto, paramId: number) {

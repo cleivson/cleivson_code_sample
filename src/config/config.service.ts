@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
+import { PUBLIC_CLIENT_URL, PUBLIC_SERVER_URL } from './config.constants';
 import { CONFIG_FILE_PATH } from './providers.constants';
 
 /**
@@ -12,6 +13,14 @@ export class ConfigService {
 
   constructor(@Inject(CONFIG_FILE_PATH) filePath: string) {
     this.envConfig = dotenv.parse(fs.readFileSync(filePath));
+  }
+
+  getPublicServerUrl(): string {
+    return this.get(PUBLIC_SERVER_URL);
+  }
+
+  getPublicClientUrl(): string {
+    return this.get(PUBLIC_CLIENT_URL);
   }
 
   /**
