@@ -1,12 +1,11 @@
 import { HttpStatus, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from 'app.module';
-import { CreateUserRequestDto } from 'auth/dto';
 import { MailService } from 'mail';
 import { SeederModule, SeederService } from 'seeder';
 import { instance, mock } from 'ts-mockito';
 import { getConnection, Repository } from 'typeorm';
-import { User, UserRoles } from 'users';
+import { CreateUserRequestDto, User, UserRoles } from 'users';
 import { USERS_ROUTE } from '../constants';
 import { getAccessToken } from '../utils/helper.functions';
 
@@ -134,8 +133,8 @@ describe('UserController Security (e2e)', () => {
 });
 
 function testRootEndpoints(validUserToInsert: Partial<User>,
-  expectAuthorized: boolean,
-  getCredentials?: (seederService: SeederService) => CreateUserRequestDto) {
+                           expectAuthorized: boolean,
+                           getCredentials?: (seederService: SeederService) => CreateUserRequestDto) {
   let accessToken: string;
   let failureStatus: HttpStatus;
   let credentials: CreateUserRequestDto;
@@ -213,8 +212,8 @@ function testSameUserEndpoints(expectAuthorized: boolean, getCredentials?: (seed
 }
 
 function testDifferentUserEndpoints(validUserToInsert: Partial<User>,
-  expectAuthorized: boolean,
-  getCredentials?: (seederService: SeederService) => CreateUserRequestDto) {
+                                    expectAuthorized: boolean,
+                                    getCredentials?: (seederService: SeederService) => CreateUserRequestDto) {
   let accessToken: string;
   let credentials: CreateUserRequestDto;
   let validUserToUpdate: Partial<User>;

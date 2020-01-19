@@ -3,9 +3,8 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiBasicAuth, ApiBody, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Crud, CrudController, CrudRequest, CrudRequestInterceptor, ParsedRequest } from '@nestjsx/crud';
 import { propertyOf } from 'common';
-import { User, UsersService } from 'users';
+import { CreateUserRequestDto, User, UsersService } from 'users';
 import { AccountService } from './account.service';
-import { CreateUserRequestDto } from './dto';
 
 const CONTROLLER_ROUTE = 'account';
 const ACCOUNT_VERIFICATION_ROUTE = 'verify';
@@ -42,7 +41,7 @@ const VALIDATION_USERMAIL_QUERY = 'userEmail';
 })
 @ApiTags('Account')
 @Controller(CONTROLLER_ROUTE)
-export class AccountController implements CrudController<User> { // TODO Stop inheriting from CrudController
+export class AccountController implements CrudController<User> {
   constructor(readonly service: UsersService,
               private readonly accountService: AccountService) { }
 

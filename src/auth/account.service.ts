@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CrudRequest } from '@nestjsx/crud';
-import { User, UsersService } from 'users';
-import { CreateUserRequestDto } from './dto';
+import { CreateUserRequestDto, User, UsersService } from 'users';
 import { LockedAccountException, UnverifiedEmailException } from './exceptions';
 import { JwtPassportService } from './jwt';
 

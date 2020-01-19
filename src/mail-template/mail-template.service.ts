@@ -3,7 +3,6 @@ import { MailData } from '@sendgrid/helpers/classes/mail';
 import { ConfigService } from 'config';
 import { MailService } from 'mail';
 import * as url from 'url';
-import { User, VerificationToken } from 'users/model';
 import { ACCOUNT_VALIDATION_MAIL_TEMPLATE_ID, DEFAULT_MAIL_SENDER_ADDRESS, INVITATION_MAIL_TEMPLATE_ID } from './mail-template.constants';
 
 @Injectable()
@@ -19,8 +18,8 @@ export class MailTemplateService {
     this.userInvitationTemplateId = config.get(INVITATION_MAIL_TEMPLATE_ID);
   }
 
-  async sendInvitationMail(userMail: string) {
-    const accountCreationUrl: string = this.getAccountCreationUrl();
+  async sendInvitationMail(userMail: string, inviteToken: string) {
+    const accountCreationUrl: string = this.getAcceptInvitationUrl(inviteToken);
 
     const mailToSend: MailData = {
       from: this.mailSender,
@@ -38,15 +37,15 @@ export class MailTemplateService {
     await this.mailService.sendMail(mailToSend);
   }
 
-  async sendAccountValidationMail(verificationToken: VerificationToken, user: User) {
-    const validationUrl = this.getValidationUrl(verificationToken, user);
+  async sendAccountValidationMail(userEmail: string, verificationToken: string) {
+    const validationUrl = this.getValidationUrl(userEmail, verificationToken);
 
     const mailToSend: MailData = {
       from: this.mailSender,
       templateId: this.accountValidationTemplateId,
       personalizations: [
         {
-          to: user.email,
+          to: userEmail,
           dynamicTemplateData: {
             validationUrl,
           },
@@ -57,11 +56,11 @@ export class MailTemplateService {
     await this.mailService.sendMail(mailToSend);
   }
 
-  private getAccountCreationUrl(): string {
+  private getAcceptInvitationUrl(inviteToken: string): string {
     const urlObject: url.UrlObject = {
       host: this.config.getPublicClientUrl(),
-      pathname: '/api/',
-      hash: '#/Account/register',
+      pathname: '/invite/validate',
+      query: { token: inviteToken },
     };
 
     const accountCreationUrl = url.format(urlObject);
@@ -69,11 +68,11 @@ export class MailTemplateService {
     return accountCreationUrl;
   }
 
-  private getValidationUrl(verificationToken: VerificationToken, user: User): string {
+  private getValidationUrl(userEmail: string, verificationToken: string): string {
     const urlObject: url.UrlObject = {
       host: this.config.getPublicServerUrl(),
-      pathname: '/account/verify',
-      query: { token: verificationToken.token, email: user.email },
+      pathname: '/users/verify',
+      query: { token: verificationToken, email: userEmail },
     };
 
     return url.format(urlObject);

@@ -7,7 +7,7 @@ import { propertyOf, throwIfBodyOverridesPath } from 'common';
 import { ParsedQuery } from 'query';
 import { AdvancedQuery } from 'query/advanced-query';
 import { Roles } from './decorators';
-import { InviteUserRequest, LoggedUserDto } from './dto';
+import { LoggedUserDto } from './dto';
 import { RolesGuard } from './guards';
 import { User, UserRoles } from './model';
 import { UsersService } from './users.service';
@@ -101,13 +101,6 @@ export class UsersController implements CrudController<User> {
   @ApiQuery({ name: 'sort', type: 'string', isArray: true, required: false })
   async getMany(@ParsedRequest() req: CrudRequest, @ParsedQuery() query: AdvancedQuery<User>): Promise<User[]> {
     return this.service.getUsers(req, query);
-  }
-
-  @Post('/invite')
-  @Roles(UserRoles.Admin)
-  @ApiBody({ type: InviteUserRequest })
-  async invite(@Body() inviteRequest: InviteUserRequest) {
-    this.service.invite(inviteRequest.email);
   }
 
   private async checkPermissionToUpdate(req: CrudRequest, dto: User, loggedUser: LoggedUserDto, paramId: number) {

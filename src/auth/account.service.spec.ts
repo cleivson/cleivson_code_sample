@@ -1,8 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { capture, instance, mock, spy, when } from 'ts-mockito';
-import { LoggedUserDto, UserRoles, UsersService } from 'users';
+import { CreateUserRequestDto, LoggedUserDto, UserRoles, UsersService } from 'users';
 import { AccountService } from './account.service';
-import { CreateUserRequestDto } from './dto';
 import { LockedAccountException, UnverifiedEmailException } from './exceptions';
 import { JwtPassportService, JwtStrategyModule } from './jwt';
 

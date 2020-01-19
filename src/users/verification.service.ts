@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { MailTemplateService } from 'mail-template';
 import { EntityManager, Repository } from 'typeorm';
 import { UserAlreadyVerifiedException, VerificationTokenExpiredException, VerificationTokenNotFoundException } from './exceptions';
-import { MailTemplateService } from './mail-template';
 import { User, VerificationToken } from './model';
 import moment = require('moment');
 
@@ -30,7 +30,7 @@ export class VerificationService {
       this.markUserAsUnverified(user, transactionManager);
     });
 
-    await this.mailService.sendAccountValidationMail(savedVerificationToken, user);
+    await this.mailService.sendAccountValidationMail(savedVerificationToken.token, user.email);
 
     return savedVerificationToken;
   }

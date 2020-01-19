@@ -6,7 +6,6 @@ import * as bcrypt from 'bcrypt';
 import { AdvancedQuery, TypeormQueryBuilderVisitor } from 'query';
 import { DeepPartial, QueryFailedError, Repository } from 'typeorm';
 import { DuplicateUserException } from './exceptions/duplicate-user.exception';
-import { MailTemplateService } from './mail-template';
 import { User } from './model';
 import { VerificationService } from './verification.service';
 
@@ -21,24 +20,8 @@ const saltRounds: number = 10;
 @Injectable()
 export class UsersService extends TypeOrmCrudService<User> {
   constructor(@InjectRepository(User) repository: Repository<User>,
-              private readonly verificationService: VerificationService,
-              private readonly mailService: MailTemplateService) {
+              private readonly verificationService: VerificationService) {
     super(repository);
-  }
-
-  /**
-   * Invites a new user based on his/her email.
-   * @param email The email of the user to be invited.
-   * @throws DuplicateUserException if there is already an user with the desired email.
-   */
-  async invite(email: string) {
-    const existingUser = await this.findOne({ email }, { select: ['id'] });
-
-    if (existingUser) {
-      throw new DuplicateUserException(email);
-    }
-
-    await this.mailService.sendInvitationMail(email);
   }
 
   async validateEmail(token: string, userEmail: string) {
@@ -56,9 +39,11 @@ export class UsersService extends TypeOrmCrudService<User> {
     await this.checkExistingUserId(user);
 
     try {
-      const savedUser =  await super.createOne(req, user);
+      const savedUser = await super.createOne(req, user);
 
-      this.verificationService.generateValidationToken(savedUser);
+      if (!savedUser.verified) {
+        this.verificationService.generateValidationToken(savedUser);
+      }
 
       return savedUser;
     } catch (e) {

@@ -6,7 +6,7 @@ import { EntityRepository, Repository } from 'typeorm';
 import { User } from './model';
 import { UsersService } from './users.service';
 import { VerificationService } from './verification.service';
-import { MailTemplateService } from './mail-template';
+import { MailTemplateService } from 'mail-template';
 
 describe('UsersService', () => {
   let service: UsersService;

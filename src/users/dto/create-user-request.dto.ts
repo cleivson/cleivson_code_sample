@@ -1,17 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDefined, IsEmail } from 'class-validator';
-import { Column } from 'typeorm';
+import { IsAlpha, IsDefined, IsEmail, IsNotEmpty } from 'class-validator';
 
 /**
  * Represents a request for a new user in the API.
  */
 export class CreateUserRequestDto {
   @IsDefined()
+  @IsAlpha()
   @ApiProperty()
   firstName: string;
 
-  @Column()
   @IsDefined()
+  @IsAlpha()
   @ApiProperty()
   lastName: string;
 
@@ -21,6 +21,7 @@ export class CreateUserRequestDto {
   readonly email: string;
 
   @IsDefined()
+  @IsNotEmpty()
   @ApiProperty()
   readonly password: string;
 }

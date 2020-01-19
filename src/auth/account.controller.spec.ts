@@ -1,9 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { capture, instance, mock, when } from 'ts-mockito';
-import { LoggedUserDto, UserRoles, UsersService } from 'users';
+import { LoggedUserDto, UserRoles, UsersService, CreateUserRequestDto } from 'users';
 import { AccountController } from './account.controller';
 import { AccountService } from './account.service';
-import { CreateUserRequestDto } from './dto';
 
 describe('Account Controller', () => {
   let controller: AccountController;
