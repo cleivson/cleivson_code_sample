@@ -1,4 +1,4 @@
-import { Controller, Get, HttpStatus, Param, ParseIntPipe, Post, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, HttpStatus, Param, ParseIntPipe, Res, UploadedFile, UseGuards, UseInterceptors, Put } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiParam, ApiTags } from '@nestjs/swagger';
@@ -46,7 +46,7 @@ export class UserProfilePictureController implements CrudController<UserProfileP
   constructor(readonly service: UserProfilePictureService,
               private readonly usersService: UsersService) { }
 
-  @Post(PROFILE_PICTURE_ROUTE)
+  @Put(PROFILE_PICTURE_ROUTE)
   @UseInterceptors(FileInterceptor('picture'), CrudRequestInterceptor)
   @ApiConsumes('multipart/form-data')
   @ApiBody({

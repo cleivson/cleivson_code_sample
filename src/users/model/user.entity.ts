@@ -60,6 +60,8 @@ export class User {
    * The account of the user is locked.
    */
   @Column({ default: false })
+  @IsOptional({ always: true })
+  @ApiPropertyOptional()
   locked?: boolean;
 
   @Column({ default: 0 })

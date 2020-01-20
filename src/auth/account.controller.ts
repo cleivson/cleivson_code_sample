@@ -2,8 +2,7 @@ import { Body, Controller, Get, Post, Query, Request, UseGuards, UseInterceptors
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBasicAuth, ApiBody, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Crud, CrudController, CrudRequest, CrudRequestInterceptor, ParsedRequest } from '@nestjsx/crud';
-import { propertyOf } from 'common';
-import { CreateUserRequestDto, User, UsersService } from 'users';
+import { CreateUserRequestDto, User, userFieldsToExcludeFromResponse, UsersService } from 'users';
 import { JwtPassportService } from './jwt';
 
 const CONTROLLER_ROUTE = 'account';
@@ -31,9 +30,7 @@ const VALIDATION_USERMAIL_QUERY = 'userEmail';
     ],
   },
   query: {
-    exclude: [
-      propertyOf<User>('passwordHash'),
-    ],
+    exclude: userFieldsToExcludeFromResponse,
   },
   validation: {
     transform: true,

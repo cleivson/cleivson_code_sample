@@ -3,10 +3,9 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Crud, CrudController, CrudRequest, CrudRequestInterceptor, Override, ParsedBody, ParsedRequest } from '@nestjsx/crud';
 import { LoggedUser } from 'auth/decorators/logged-user.decorator';
-import { propertyOf } from 'common';
 import { ParsedQuery } from 'query';
 import { AdvancedQuery } from 'query/advanced-query';
-import { checkPermission, checkPermissionToUpdate } from './controller-permissions-checker';
+import { checkPermission, checkPermissionToUpdate, userFieldsToExcludeFromResponse } from './controller-permissions-checker';
 import { Roles } from './decorators';
 import { LoggedUserDto } from './dto';
 import { RolesGuard } from './guards';
@@ -23,9 +22,7 @@ const USER_ID = 'id';
     exclude: ['createManyBase', 'getManyBase'],
   },
   query: {
-    exclude: [
-      propertyOf<User>('passwordHash'),
-    ],
+    exclude: userFieldsToExcludeFromResponse,
   },
   validation: {
     transform: true,

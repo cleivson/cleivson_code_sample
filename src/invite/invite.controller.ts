@@ -2,8 +2,7 @@ import { Body, Controller, Get, Post, Query, UseGuards, UseInterceptors } from '
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiBody, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Crud, CrudController, CrudRequest, CrudRequestInterceptor, ParsedRequest } from '@nestjsx/crud';
-import { propertyOf } from 'common';
-import { InviteUserRequest, Roles, RolesGuard, User, UserRoles, UsersService } from 'users';
+import { InviteUserRequest, Roles, RolesGuard, User, userFieldsToExcludeFromResponse, UserRoles, UsersService } from 'users';
 import { AcceptInviteRequest } from './dto';
 import { InviteService } from './invite.service';
 
@@ -26,9 +25,7 @@ import { InviteService } from './invite.service';
     ],
   },
   query: {
-    exclude: [
-      propertyOf<User>('passwordHash'),
-    ],
+    exclude: userFieldsToExcludeFromResponse,
   },
   validation: {
     transform: true,
