@@ -1,4 +1,4 @@
-import { ApiProperty, ApiResponseProperty } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { CrudValidationGroups } from '@nestjsx/crud';
 import { IsDefined, IsISO8601, IsNotEmpty, IsOptional, Min } from 'class-validator';
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
@@ -22,24 +22,24 @@ export class JoggingEntry {
   @IsDefined({ groups: [CREATE] })
   @IsOptional({ groups: [UPDATE] })
   @Min(1)
-  @ApiProperty({ description: 'The total travelled distance in meters', minimum: 1})
-  distance: number;
+  @ApiPropertyOptional({ description: 'The total travelled distance in meters', minimum: 1})
+  distance?: number;
 
   /**
    * The jogging duration in time format (e.g.: 01:43:23).
    */
   @Column()
   @IsNotEmpty({ groups: [CREATE] })
-  @ApiProperty({ description: 'The jogging duration', type: 'string', format: 'time', example: '00:55:43' })
-  duration: string;
+  @ApiPropertyOptional({ description: 'The jogging duration', type: 'string', format: 'time', example: '00:55:43' })
+  duration?: string;
 
   /**
    * The location where the jogging happened.
    */
   @Column()
   @IsNotEmpty({ groups: [CREATE] })
-  @ApiProperty()
-  location: string;
+  @ApiPropertyOptional()
+  location?: string;
 
   /**
    * The UTC date when the jogging happened.
@@ -47,7 +47,7 @@ export class JoggingEntry {
   @Column({ type: 'date' })
   @IsNotEmpty({ groups: [CREATE] })
   @IsISO8601()
-  @ApiProperty({ description: 'The date when the jogging happened', type: 'string', format: 'date', example: '2020-01-15' })
+  @ApiPropertyOptional({ description: 'The date when the jogging happened', type: 'string', format: 'date', example: '2020-01-15' })
   date: string;
 
   /**
@@ -55,7 +55,7 @@ export class JoggingEntry {
    */
   @Column({ type: 'time' })
   @IsNotEmpty({ groups: [CREATE] })
-  @ApiProperty({ type: 'string', format: 'time', example: '13:55:43' })
+  @ApiPropertyOptional({ type: 'string', format: 'time', example: '13:55:43' })
   time: string;
 
   /**
@@ -64,8 +64,14 @@ export class JoggingEntry {
   @Column({ nullable: false })
   @IsNotEmpty({ groups: [CREATE] })
   @IsOptional({ groups: [UPDATE] })
-  @ApiProperty()
+  @ApiPropertyOptional()
   userId?: number;
+
+  /**
+   * The weather conditions in the time and place of the activity.
+   */
+  @Column()
+  weatherCondition?: string;
 
   @ManyToOne(type => User, { onDelete: 'CASCADE' })
   user?: User;

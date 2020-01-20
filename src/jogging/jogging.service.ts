@@ -1,10 +1,11 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CrudRequest } from '@nestjsx/crud';
 import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { AdvancedQuery, TypeormQueryBuilderVisitor } from 'query';
 import { QueryFailedError, Repository } from 'typeorm';
 import { User } from 'users';
+import { WeatherProviderService } from '../weather';
 import { WeeklyReportDto } from './dto/weekly-report.dto';
 import { InvalidUserException } from './exceptions';
 import { JoggingEntry } from './model';
@@ -17,7 +18,8 @@ import moment = require('moment');
 @Injectable()
 export class JoggingService extends TypeOrmCrudService<JoggingEntry> {
   constructor(@InjectRepository(JoggingEntry) repository: Repository<JoggingEntry>,
-              @Inject(WeeklyReportGenerator) private reportGenerator: WeeklyReportGenerator) {
+              private readonly reportGenerator: WeeklyReportGenerator,
+              private readonly weatherProvider: WeatherProviderService) {
     super(repository);
   }
 
@@ -31,6 +33,12 @@ export class JoggingService extends TypeOrmCrudService<JoggingEntry> {
   async createJoggingEntry(joggingEntry: JoggingEntry): Promise<JoggingEntry> {
     if (joggingEntry.id) {
       this.throwBadRequestException('New jogging entry entry should not have an id.');
+    }
+
+    const weatherCondition = await this.weatherProvider.getWeatherCondition(joggingEntry.location, joggingEntry.date, joggingEntry.time);
+
+    if (weatherCondition) {
+      joggingEntry.weatherCondition = weatherCondition.description;
     }
 
     return this.saveJoggingEntry(joggingEntry);

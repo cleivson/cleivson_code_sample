@@ -24,9 +24,15 @@ Not yet supported because of [bcrypt](https://www.npmjs.com/package/bcrypt) depe
 
 ## Running the app
 
+### Prerequisites
+
 In order to run the app, you need no create a database (only tested with MySql until now) and put its configurations in the file ormconfig.json.
 
-Also, you have to setup the API Key from [SendGrid](https://sendgrid.com/). To do this, follow the steps in: https://app.sendgrid.com/guide/integrate/langs/nodejs
+Also, you have to setup the API Key from [SendGrid](https://sendgrid.com/). To do this, follow the steps in: https://app.sendgrid.com/guide/integrate/langs/nodejs. Make sure you have your API Key under SENDGRID_API_KEY in the .env.{environment} file or as an environment variable.
+
+To check the weather conditions of the jogging activities, you need to create an account in the [WorldWeatherOnline](https://www.worldweatheronline.com/developer) (Free 60-day trial) and set the API Key under WEATHER_API_KEY in the .env.{environment} file or as an environment variable.
+
+### Running
 
 ```bash
 # development
