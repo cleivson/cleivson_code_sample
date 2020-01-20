@@ -1,4 +1,3 @@
-import { LoggedUserDto } from 'users';
 
 /**
  * Represents the payload to be serialized into the Bearer token issued to a logged user.
@@ -10,7 +9,7 @@ export interface TokenPayload {
   username: string;
 
   /**
-   * The representation of the logged user.
+   * Id of the logged user.
    */
-  sub: LoggedUserDto;
+  sub: number;
 }

@@ -1,14 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { LoggedUserDto } from 'users';
+import { ConfigService } from '../../config';
 import { TokenPayload } from './dto';
+import { JWT_TOKEN_EXPIRATION_CONFIG_KEY } from './jwt.constants';
 
 /**
  * Service class that provides the manipulation services related to the Jwt authentication strategy.
  */
 @Injectable()
 export class JwtPassportService {
-  constructor(private readonly jwtService: JwtService) { }
+  private readonly expirationTime: string;
+
+  constructor(private readonly jwtService: JwtService,
+              configService: ConfigService) {
+    this.expirationTime = configService.get(JWT_TOKEN_EXPIRATION_CONFIG_KEY);
+  }
 
   /**
    * Generates a Jwt token to be used to authenticate the user into the API in future calls.
@@ -16,21 +23,15 @@ export class JwtPassportService {
    * @param user - The logged user that must be associated with the generated Bearer token.
    * @returns The signed bearer token to be used to authenticate into future calls of the API.
    */
-  async generateToken(user: LoggedUserDto) {
-    const payload: TokenPayload = { username: user.email, sub: user };
+  generateToken(user: LoggedUserDto) {
+    const payload: TokenPayload = { username: user.email, sub: user.id };
+
+    const signedToken = this.jwtService.sign(payload);
 
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: signedToken,
+      token_type: 'Bearer',
+      expires_in: this.expirationTime,
     };
-  }
-
-  /**
-   * Parses a Jwt deserialized content into a logged in user.
-   *
-   * @param tokenPayload - The deserialized payload of a Jwt token used to authenticate the user.
-   * @returns The representation of a user logged in the API.
-   */
-  parseToken(tokenPayload: TokenPayload): LoggedUserDto {
-    return tokenPayload.sub;
   }
 }

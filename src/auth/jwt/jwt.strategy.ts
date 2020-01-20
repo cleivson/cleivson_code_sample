@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ConfigService } from 'config';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { LoggedUserDto } from 'users';
+import { LoggedUserDto, UsersService } from 'users';
+import { validateUser } from '../validation/login-validation.functions';
 import { TokenPayload } from './dto';
 import { JWT_SECRET_CONFIG_KEY } from './jwt.constants';
 import { JwtPassportService } from './jwt.service';
@@ -13,7 +14,8 @@ import { JwtPassportService } from './jwt.service';
 @Injectable()
 export class JwtPassportStrategy extends PassportStrategy(Strategy) {
   constructor(private readonly configService: ConfigService,
-              private readonly jwtService: JwtPassportService) {
+              private readonly jwtService: JwtPassportService,
+              private readonly usersService: UsersService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
@@ -28,6 +30,19 @@ export class JwtPassportStrategy extends PassportStrategy(Strategy) {
    * @returns The equivalent user of the token payload.
    */
   async validate(payload: TokenPayload): Promise<LoggedUserDto> {
-    return this.jwtService.parseToken(payload);
+    const userId = payload.sub;
+
+    const persistedUser = await this.usersService.findOne(userId);
+
+    // The user to whom the token was issued doesn't exist anymore or had it's username changed
+    if (!persistedUser || persistedUser.email !== payload.username) {
+      throw new UnauthorizedException();
+    }
+
+    validateUser(persistedUser);
+
+    const { passwordHash, ...loggedUser } = persistedUser;
+
+    return loggedUser;
   }
 }

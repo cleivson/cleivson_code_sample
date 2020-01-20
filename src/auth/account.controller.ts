@@ -4,7 +4,7 @@ import { ApiBasicAuth, ApiBody, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Crud, CrudController, CrudRequest, CrudRequestInterceptor, ParsedRequest } from '@nestjsx/crud';
 import { propertyOf } from 'common';
 import { CreateUserRequestDto, User, UsersService } from 'users';
-import { AccountService } from './account.service';
+import { JwtPassportService } from './jwt';
 
 const CONTROLLER_ROUTE = 'account';
 const ACCOUNT_VERIFICATION_ROUTE = 'verify';
@@ -43,7 +43,7 @@ const VALIDATION_USERMAIL_QUERY = 'userEmail';
 @Controller(CONTROLLER_ROUTE)
 export class AccountController implements CrudController<User> {
   constructor(readonly service: UsersService,
-              private readonly accountService: AccountService) { }
+              private readonly jwtService: JwtPassportService) { }
 
   get base(): CrudController<User> {
     return this;
@@ -53,7 +53,7 @@ export class AccountController implements CrudController<User> {
   @UseInterceptors(CrudRequestInterceptor)
   @ApiBody({ type: CreateUserRequestDto })
   async register(@ParsedRequest() req: CrudRequest, @Body() newUser: CreateUserRequestDto): Promise<void> {
-    await this.accountService.register(newUser, req);
+    await this.service.createOne(req, newUser);
   }
 
   @Get(ACCOUNT_VERIFICATION_ROUTE)
@@ -61,7 +61,7 @@ export class AccountController implements CrudController<User> {
   @ApiQuery({ name: VALIDATION_USERMAIL_QUERY })
   async validate(@Query(VALIDATION_TOKEN_QUERY) token: string, @Query(VALIDATION_USERMAIL_QUERY) userEmail: string) {
     // TODO Test that when an user changes it's email, the account is locked again until confirmation.
-    await this.accountService.validateEmail(token, userEmail);
+    await this.service.validateEmail(token, userEmail);
   }
 
   /**
@@ -76,6 +76,6 @@ export class AccountController implements CrudController<User> {
   async login(@Request() req) {
     const user: User = req.user;
 
-    return this.accountService.login(user);
+    return this.jwtService.generateToken(user);
   }
 }

@@ -1,28 +1,28 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { capture, instance, mock, when } from 'ts-mockito';
-import { LoggedUserDto, UserRoles, UsersService, CreateUserRequestDto } from 'users';
+import { CreateUserRequestDto, LoggedUserDto, UserRoles, UsersService } from 'users';
 import { AccountController } from './account.controller';
-import { AccountService } from './account.service';
+import { JwtPassportService } from './jwt';
 
 describe('Account Controller', () => {
   let controller: AccountController;
   let usersServiceMock: UsersService;
-  let accountServiceMock: AccountService;
+  let jwtServiceMock: JwtPassportService;
 
   beforeEach(async () => {
-    accountServiceMock = mock<AccountService>(AccountService);
     usersServiceMock = mock<UsersService>(UsersService);
+    jwtServiceMock = mock<JwtPassportService>(JwtPassportService);
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AccountController],
       providers: [
         {
-          provide: AccountService,
-          useValue: instance(accountServiceMock),
-        },
-        {
           provide: UsersService,
           useValue: instance(usersServiceMock),
+        },
+        {
+          provide: JwtPassportService,
+          useValue: instance(jwtServiceMock),
         },
       ],
     }).compile();
@@ -40,7 +40,7 @@ describe('Account Controller', () => {
 
       controller.register(undefined, expectedDto);
 
-      const [actualDto] = capture(accountServiceMock.register).last();
+      const [, actualDto] = capture(usersServiceMock.createOne).last();
 
       expect(actualDto).toEqual(expectedDto);
     });
@@ -56,7 +56,7 @@ describe('Account Controller', () => {
       it('should return generated token for logged user', async () => {
         const bearerToken = 'token';
 
-        when(accountServiceMock.login(loginUser)).thenResolve({ access_token: bearerToken });
+        when(jwtServiceMock.generateToken(loginUser)).thenReturn({ access_token: bearerToken, token_type: 'Bearer', expires_in: '1d' });
 
         const loginResult = await controller.login({ user: loginUser });
 

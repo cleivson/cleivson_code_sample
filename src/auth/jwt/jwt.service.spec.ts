@@ -1,7 +1,10 @@
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from 'config';
 import { LoggedUserDto, UserRoles } from 'users';
 import { JwtPassportService } from './jwt.service';
+
+const EXPIRES_IN = '10s';
 
 describe('JwtPassportService', () => {
   let service: JwtPassportService;
@@ -19,6 +22,10 @@ describe('JwtPassportService', () => {
             },
           },
         },
+        {
+          provide: ConfigService,
+          useValue: { get: (key) => key === 'LOGIN_JWT_EXPIRES_IN' ? EXPIRES_IN : 'secret' },
+        },
       ],
     }).compile();
 
@@ -28,17 +35,6 @@ describe('JwtPassportService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
-  });
-
-  describe('.parseToken()', () => {
-    const expectedUser: LoggedUserDto = { email: 'testuser', id: 23, role: UserRoles.User };
-    const tokenPayload = { username: expectedUser.email, sub: expectedUser };
-
-    it('should parse logged user from token', () => {
-      const actualUser = service.parseToken(tokenPayload);
-
-      expect(actualUser).toEqual(expectedUser);
-    });
   });
 
   describe('.generateToken()', () => {
@@ -54,10 +50,10 @@ describe('JwtPassportService', () => {
 
       expect(signMock).toHaveBeenCalledWith({
         username: user.email,
-        sub: user,
+        sub: user.id,
       });
 
-      expect(token).toEqual({ access_token: expectedToken });
+      expect(token).toEqual({ access_token: expectedToken, token_type: 'Bearer', expires_in: EXPIRES_IN });
 
       signMock.mockRestore();
     });

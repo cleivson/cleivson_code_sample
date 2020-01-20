@@ -95,6 +95,22 @@ export class UsersService extends TypeOrmCrudService<User> {
   }
 
   /**
+   * Saves an user directly to the database.
+   *
+   * DO NOT use this method to save plain text passwords or any other field that demands precomputing.
+   * @param user The user to be saved.
+   */
+  async save(user: User): Promise<User> {
+    try {
+      this.updateHashedPassword(user);
+
+      return await this.repo.save(user);
+    } catch (e) {
+      this.translateError(e, user);
+    }
+  }
+
+  /**
    * Fetches the users from the database according to the given criteria.
    * @param req The CrudRequest that contains information like pagination, offset, sort key, ... about the query in the database.
    * @param query The query to filter the results to be returned.
@@ -131,11 +147,16 @@ export class UsersService extends TypeOrmCrudService<User> {
   }
 
   protected prepareEntityBeforeSave(dto: DeepPartial<User>, parsed: CrudRequest['parsed']): User {
-    if (dto.password) {
-      dto.passwordHash = this.hashPassword(dto.password);
-    }
+    this.updateHashedPassword(dto);
 
     return super.prepareEntityBeforeSave(dto, parsed);
+  }
+
+  private updateHashedPassword(dto: DeepPartial<User>) {
+    if (dto.password) {
+      dto.passwordHash = this.hashPassword(dto.password);
+      dto.password = undefined;
+    }
   }
 
   private async checkExistingUserId(user: DeepPartial<User>) {

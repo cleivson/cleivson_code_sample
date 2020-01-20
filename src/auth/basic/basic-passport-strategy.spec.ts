@@ -1,7 +1,9 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { deepEqual, spy, verify, when } from 'ts-mockito';
-import { LoggedUserDto, User, UserRoles, UsersService } from 'users';
+import { ConfigService } from 'config';
+import { anything, capture, deepEqual, spy, when } from 'ts-mockito';
+import { User, UserRoles, UsersService } from 'users';
+import { LockedAccountException, UnverifiedEmailException } from '../exceptions';
 import { BasicPassportStrategy } from './basic-passport-strategy';
 
 describe('BasicPassportStrategy', () => {
@@ -10,14 +12,23 @@ describe('BasicPassportStrategy', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [BasicPassportStrategy, {
-        provide: UsersService,
-        useValue: { findOne: () => { /* */ }, verifyPassword: () => { /* */ } },
-      }],
+      providers: [
+        BasicPassportStrategy,
+        {
+          provide: UsersService,
+          useValue: { findOne: () => { /* */ }, verifyPassword: () => { /* */ }, save: () => { /* */ } },
+        },
+        {
+          provide: ConfigService,
+          useValue: { get: () => 'secret' },
+        },
+      ],
     }).compile();
 
     usersService = spy(module.get<UsersService>(UsersService));
     strategy = module.get<BasicPassportStrategy>(BasicPassportStrategy);
+
+    when(usersService.save(anything())).thenCall(user => user);
   });
 
   it('should be defined', () => {
@@ -28,43 +39,204 @@ describe('BasicPassportStrategy', () => {
     const userEmail = 'testuser';
     const password = 'password';
 
-    const expectedLoggedUser: LoggedUserDto = { email: userEmail, id: 23, role: UserRoles.User, verified: true, locked: true };
+    describe('non existent user', () => {
+      beforeEach(() => {
+        when(usersService.findOne(deepEqual({ email: userEmail }))).thenResolve();
+      });
 
-    it('should throw exception for invalid user', async () => {
-      when(usersService.findOne(deepEqual({ email: userEmail }))).thenResolve(null);
-
-      await expect(strategy.validate(userEmail, password))
-        .rejects
-        .toThrowError(UnauthorizedException);
-
-      verify(usersService.findOne(deepEqual({ email: userEmail }))).once();
+      it('should throw UnauthorizedException', async () => {
+        await expect(strategy.validate(userEmail, password))
+          .rejects
+          .toThrowError(UnauthorizedException);
+      });
     });
 
-    it('should throw exception for invalid password', async () => {
+    describe('existent user', () => {
       const passwordHash = 'klasdma';
-      const user: User = { passwordHash, password, ...expectedLoggedUser };
+      let user: User;
 
-      when(usersService.findOne(deepEqual({ email: userEmail }))).thenResolve(user);
-      when(usersService.verifyPassword(password, user)).thenResolve(false);
+      beforeEach(() => {
+        user = { passwordHash, email: userEmail, id: 23, role: UserRoles.User, verified: true, locked: false };
 
-      await expect(strategy.validate(userEmail, password))
-        .rejects
-        .toThrowError(UnauthorizedException);
+        when(usersService.findOne(deepEqual({ email: userEmail }))).thenResolve(user);
+      });
 
-      verify(usersService.findOne(deepEqual({ email: userEmail }))).once();
-      verify(usersService.verifyPassword(password, user)).once();
-    });
+      describe('with wrong password', () => {
+        const maximumAttempts = 3;
 
-    it('should return logged user for right credentials', async () => {
-      const passwordHash = 'klasdma';
+        beforeEach(() => {
+          when(usersService.verifyPassword(password, user)).thenResolve(false);
+        });
 
-      when(usersService.findOne(deepEqual({ email: userEmail }))).thenResolve(expectedLoggedUser);
+        describe('less than maximum attempts', () => {
+          beforeEach(() => {
+            user.incorrectLogins = maximumAttempts - 1;
+          });
 
-      when(usersService.verifyPassword(password, expectedLoggedUser)).thenResolve(true);
+          it('should throw UnauthorizedException and increment incorrect logins', async () => {
+            await expect(strategy.validate(userEmail, password))
+              .rejects
+              .toThrowError(UnauthorizedException);
 
-      const actualLoggedUser = await strategy.validate(userEmail, password);
+            const [savedUser] = capture(usersService.save).last();
 
-      expect(actualLoggedUser).toEqual(expectedLoggedUser);
+            expect(savedUser.incorrectLogins).toBe(maximumAttempts);
+            expect(savedUser.locked).toBeFalsy();
+          });
+        });
+
+        describe('maximum number of attempts', () => {
+          beforeEach(() => {
+            user.incorrectLogins = maximumAttempts;
+          });
+
+          it('should throw LockedAccountException and increment incorrect logins', async () => {
+            await expect(strategy.validate(userEmail, password))
+              .rejects
+              .toThrowError(LockedAccountException);
+
+            const [savedUser] = capture(usersService.save).last();
+
+            expect(savedUser.incorrectLogins).toBe(maximumAttempts + 1);
+            expect(savedUser.locked).toBeTruthy();
+          });
+        });
+
+        describe('user unverified', () => {
+          beforeEach(() => {
+            user.verified = false;
+          });
+
+          describe('user locked', () => {
+            beforeEach(() => {
+              user.locked = true;
+            });
+
+            it('should throw LockedAccountException', async () => {
+              await expect(strategy.validate(userEmail, password))
+                .rejects
+                .toThrowError(LockedAccountException);
+            });
+          });
+
+          describe('user unlocked', () => {
+            beforeEach(() => {
+              user.locked = false;
+            });
+
+            it('should throw UnauthorizedException', async () => {
+              await expect(strategy.validate(userEmail, password))
+                .rejects
+                .toThrowError(UnauthorizedException);
+            });
+          });
+        });
+
+        describe('user verified', () => {
+          beforeEach(() => {
+            user.verified = false;
+          });
+
+          describe('user locked', () => {
+            beforeEach(() => {
+              user.locked = true;
+            });
+
+            it('should throw LockedAccountException', async () => {
+              await expect(strategy.validate(userEmail, password))
+                .rejects
+                .toThrowError(LockedAccountException);
+            });
+          });
+
+          describe('user unlocked', () => {
+            beforeEach(() => {
+              user.locked = false;
+            });
+
+            it('should throw UnauthorizedException', async () => {
+              await expect(strategy.validate(userEmail, password))
+                .rejects
+                .toThrowError(UnauthorizedException);
+            });
+          });
+        });
+      });
+
+      describe('with right password', () => {
+        beforeEach(() => {
+          when(usersService.verifyPassword(password, user)).thenResolve(true);
+        });
+
+        describe('user unverified', () => {
+          beforeEach(() => {
+            user.verified = false;
+          });
+
+          describe('user locked', () => {
+            beforeEach(() => {
+              user.locked = true;
+            });
+
+            it('should throw LockedAccountException', async () => {
+              await expect(strategy.validate(userEmail, password))
+                .rejects
+                .toThrowError(LockedAccountException);
+            });
+          });
+
+          describe('user unlocked', () => {
+            beforeEach(() => {
+              user.locked = false;
+            });
+
+            it('should throw UnverifiedEmailException', async () => {
+              await expect(strategy.validate(userEmail, password))
+                .rejects
+                .toThrowError(UnverifiedEmailException);
+            });
+          });
+        });
+
+        describe('user verified', () => {
+          beforeEach(() => {
+            user.verified = true;
+          });
+
+          describe('user locked', () => {
+            beforeEach(() => {
+              user.locked = true;
+            });
+
+            it('should throw LockedAccountException', async () => {
+              await expect(strategy.validate(userEmail, password))
+                .rejects
+                .toThrowError(LockedAccountException);
+            });
+          });
+
+          describe('user unlocked', () => {
+            beforeEach(() => {
+              user.locked = false;
+            });
+
+            it('should return logged user', async () => {
+              const actualLoggedUser = await strategy.validate(userEmail, password);
+
+              expect(actualLoggedUser).toEqual(user);
+            });
+
+            it('should clean incorrect logins', async () => {
+              await strategy.validate(userEmail, password);
+
+              const [savedUser] = capture(usersService.save).last();
+
+              expect(savedUser.incorrectLogins).toBe(0);
+              expect(savedUser.locked).toBeFalsy();
+            });
+          });
+        });
+      });
     });
   });
 });

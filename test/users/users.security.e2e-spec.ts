@@ -177,10 +177,7 @@ function testSameUserEndpoints(expectAuthorized: boolean, getCredentials?: (seed
       credentials = getCredentials(seederService);
       accessToken = await getAccessToken(request, credentials);
       loggedUser = await userRepository.findOne({ email: credentials.email });
-      loggedUser.passwordHash = undefined;
-      loggedUser.verified = undefined;
-      loggedUser.locked = undefined;
-      loggedUser.picture = undefined;
+      removeNonWhitelistedProperties(loggedUser);
 
       loggedUserRoute = `${USERS_ROUTE}/${loggedUser.id}`;
     });
@@ -228,10 +225,7 @@ function testDifferentUserEndpoints(validUserToInsert: Partial<User>,
 
       validUserToUpdate = { ...validUserToInsert, passwordHash: 'fakehashedpassword' };
       await userRepository.insert(validUserToUpdate);
-      validUserToUpdate.passwordHash = undefined;
-      validUserToUpdate.verified = undefined;
-      validUserToUpdate.locked = undefined;
-      validUserToUpdate.picture = undefined;
+      removeNonWhitelistedProperties(validUserToUpdate);
 
       specificUserRoute = `${USERS_ROUTE}/${validUserToUpdate.id}`;
     });
@@ -260,6 +254,13 @@ function testDifferentUserEndpoints(validUserToInsert: Partial<User>,
       });
     });
   });
+}
+
+function removeNonWhitelistedProperties(validUserToUpdate: Partial<User>) {
+  validUserToUpdate.passwordHash = undefined;
+  validUserToUpdate.verified = undefined;
+  validUserToUpdate.locked = undefined;
+  validUserToUpdate.incorrectLogins = undefined;
 }
 
 async function testGet(expectAuthorized: boolean, specificUserRoute: string, accessToken: string) {

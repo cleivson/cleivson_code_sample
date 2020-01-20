@@ -1,13 +1,12 @@
 import { HttpStatus, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from 'app.module';
+import { MailService } from 'mail';
 import { SeederModule, SeederService } from 'seeder';
 import * as req from 'supertest';
 import { instance, mock } from 'ts-mockito';
 import { getConnection, Repository } from 'typeorm';
-import { User, UserRoles } from 'users';
-import { CreateUserRequestDto } from '../../src/auth/dto';
-import { MailService } from '../../src/mail';
+import { CreateUserRequestDto, User, UserRoles } from 'users';
 
 const LOGIN_ROUTE = '/account/login';
 const REGISTER_ROUTE = '/account/register';

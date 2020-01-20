@@ -25,7 +25,6 @@ const USER_ID = 'id';
   query: {
     exclude: [
       propertyOf<User>('passwordHash'),
-      propertyOf<User>('picture'),
     ],
   },
   validation: {
