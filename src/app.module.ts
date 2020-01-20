@@ -3,12 +3,12 @@ import { APP_PIPE } from '@nestjs/core';
 import { AuthModule } from './auth';
 import { ConfigModule } from './config';
 import { DatabaseModule } from './database';
-import { InviteModule } from './invite';
 import { JoggingModule } from './jogging';
 import { MailModule } from './mail/mail.module';
 import { QueryModule } from './query';
 import { SeederModule } from './seeder';
 import { UserModule } from './users';
+import { InviteModule } from './users/invite';
 import { UserProfilePictureModule } from './users/user-profile-picture';
 
 @Module({
