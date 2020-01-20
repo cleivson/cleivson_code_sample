@@ -1,6 +1,6 @@
 import { Logger, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { MailTemplateModule } from 'mail-template';
+import { MailTemplateModule } from 'users/mail-template';
 import { User, VerificationToken } from './model';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';

@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { CrudRequest } from '@nestjsx/crud';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
-import { MailTemplateService } from 'mail-template';
+import { MailTemplateService } from 'users/mail-template';
 import { DuplicateUserException } from 'users/exceptions';
 import { UsersService } from 'users/users.service';
 import { User } from '../users';

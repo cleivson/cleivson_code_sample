@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MailTemplateService } from 'mail-template';
+import { MailTemplateService } from 'users/mail-template';
 import { EntityManager, Repository } from 'typeorm';
 import { UserAlreadyVerifiedException, VerificationTokenExpiredException, VerificationTokenNotFoundException } from './exceptions';
 import { User, VerificationToken } from './model';
