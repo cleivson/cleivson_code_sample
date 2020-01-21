@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { MailData } from '@sendgrid/helpers/classes/mail';
 import * as sendgrid from '@sendgrid/mail';
 import { ConfigService } from 'config';
@@ -12,6 +12,10 @@ export class MailService {
   }
 
   async sendMail(mailRequest: MailData) {
-    await sendgrid.send(mailRequest);
+    try {
+      await sendgrid.send(mailRequest);
+    } catch (e) {
+      throw new BadRequestException(`Invalid email address`);
+    }
   }
 }

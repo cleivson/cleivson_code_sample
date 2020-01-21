@@ -42,7 +42,7 @@ export class UsersService extends TypeOrmCrudService<User> {
       const savedUser = await super.createOne(req, user);
 
       if (!savedUser.verified) {
-        this.verificationService.generateValidationToken(savedUser);
+        await this.verificationService.generateValidationToken(savedUser);
       }
 
       return savedUser;
@@ -65,7 +65,7 @@ export class UsersService extends TypeOrmCrudService<User> {
     try {
       const savedUser = await super.updateOne(req, dto);
 
-      this.checkEmailChanged(savedUser, oldEmail);
+      await this.checkEmailChanged(savedUser, oldEmail);
 
       return savedUser;
     } catch (e) {
@@ -182,9 +182,9 @@ export class UsersService extends TypeOrmCrudService<User> {
     return oldEmail;
   }
 
-  private checkEmailChanged(savedUser: User, oldEmail: string) {
+  private async checkEmailChanged(savedUser: User, oldEmail: string) {
     if (savedUser.email !== oldEmail) {
-      this.verificationService.generateValidationToken(savedUser);
+      await this.verificationService.generateValidationToken(savedUser);
     }
   }
 

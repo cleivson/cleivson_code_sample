@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MailTemplateService } from 'users/mail-template';
 import { EntityManager, Repository } from 'typeorm';
+import { MailTemplateService } from 'users/mail-template';
 import { UserAlreadyVerifiedException, VerificationTokenExpiredException, VerificationTokenNotFoundException } from './exceptions';
 import { User, VerificationToken } from './model';
 import moment = require('moment');
@@ -24,15 +24,16 @@ export class VerificationService {
     const verificationToken: VerificationToken = new VerificationToken(user, expirationDate.toDate());
 
     let savedVerificationToken: VerificationToken;
-    await this.verificationTokenRepository.manager.transaction(async transactionManager => {
-      savedVerificationToken = await this.verificationTokenRepository.save(verificationToken);
 
-      this.markUserAsUnverified(user, transactionManager);
+    return this.verificationTokenRepository.manager.transaction(async transactionManager => {
+      savedVerificationToken = await transactionManager.getRepository(VerificationToken).save(verificationToken);
+
+      await this.markUserAsUnverified(user, transactionManager);
+
+      await this.mailService.sendAccountValidationMail(user.email, savedVerificationToken.token);
+
+      return savedVerificationToken;
     });
-
-    await this.mailService.sendAccountValidationMail(savedVerificationToken.token, user.email);
-
-    return savedVerificationToken;
   }
 
   /**
@@ -100,7 +101,7 @@ export class VerificationService {
   private async markUserAsUnverified(user: User, transactionManager: EntityManager): Promise<User> {
     const usersRepository = transactionManager.getRepository(User);
 
-    user.verified = true;
+    user.verified = false;
 
     return usersRepository.save(user);
   }

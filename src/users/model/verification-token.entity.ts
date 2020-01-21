@@ -15,7 +15,7 @@ export class VerificationToken {
   expirationDate: Date;
 
   @JoinColumn()
-  @OneToOne(type => User, { eager: true })
+  @OneToOne(type => User, { eager: true, onDelete: 'CASCADE' })
   user: User;
 
 }
