@@ -62,8 +62,7 @@ export class JoggingEntry {
    * The id of user associated to this jogging entry.
    */
   @Column({ nullable: false })
-  @IsNotEmpty({ groups: [CREATE] })
-  @IsOptional({ groups: [UPDATE] })
+  @IsOptional({ always: true })
   @ApiPropertyOptional()
   userId?: number;
 
