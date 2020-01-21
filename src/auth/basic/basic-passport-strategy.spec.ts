@@ -69,8 +69,10 @@ describe('BasicPassportStrategy', () => {
         });
 
         describe('less than maximum attempts', () => {
+          const expectedNumberOfAttempts = maximumAttempts - 1;
+
           beforeEach(() => {
-            user.incorrectLogins = maximumAttempts - 1;
+            user.incorrectLogins = expectedNumberOfAttempts - 1;
           });
 
           it('should throw UnauthorizedException and increment incorrect logins', async () => {
@@ -80,14 +82,16 @@ describe('BasicPassportStrategy', () => {
 
             const [savedUser] = capture(usersService.save).last();
 
-            expect(savedUser.incorrectLogins).toBe(maximumAttempts);
+            expect(savedUser.incorrectLogins).toBe(expectedNumberOfAttempts);
             expect(savedUser.locked).toBeFalsy();
           });
         });
 
         describe('maximum number of attempts', () => {
+          const expectedNumberOfAttempts = maximumAttempts;
+
           beforeEach(() => {
-            user.incorrectLogins = maximumAttempts;
+            user.incorrectLogins = expectedNumberOfAttempts - 1;
           });
 
           it('should throw LockedAccountException and increment incorrect logins', async () => {
@@ -97,7 +101,7 @@ describe('BasicPassportStrategy', () => {
 
             const [savedUser] = capture(usersService.save).last();
 
-            expect(savedUser.incorrectLogins).toBe(maximumAttempts + 1);
+            expect(savedUser.incorrectLogins).toBe(expectedNumberOfAttempts);
             expect(savedUser.locked).toBeTruthy();
           });
         });

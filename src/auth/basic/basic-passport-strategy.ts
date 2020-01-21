@@ -59,7 +59,7 @@ export class BasicPassportStrategy extends PassportStrategy(BasicStrategy) {
     private async handleLoginFailed(user: User): Promise<User> {
       user.incorrectLogins += 1;
 
-      if (user.incorrectLogins > this.maxNumberOfLoginAttempts) {
+      if (user.incorrectLogins >= this.maxNumberOfLoginAttempts) {
         user.locked = true;
       }
 
