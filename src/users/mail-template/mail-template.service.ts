@@ -71,8 +71,8 @@ export class MailTemplateService {
   private getValidationUrl(userEmail: string, verificationToken: string): string {
     const urlObject: url.UrlObject = {
       host: this.config.getPublicServerUrl(),
-      pathname: '/users/verify',
-      query: { token: verificationToken, email: userEmail },
+      pathname: '/account/verify',
+      query: { token: verificationToken, userEmail },
     };
 
     return url.format(urlObject);

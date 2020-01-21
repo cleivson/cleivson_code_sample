@@ -49,8 +49,8 @@ export class AccountController implements CrudController<User> {
   @Post('register')
   @UseInterceptors(CrudRequestInterceptor)
   @ApiBody({ type: CreateUserRequestDto })
-  async register(@ParsedRequest() req: CrudRequest, @Body() newUser: CreateUserRequestDto): Promise<void> {
-    await this.service.createOne(req, newUser);
+  async register(@ParsedRequest() req: CrudRequest, @Body() newUser: CreateUserRequestDto): Promise<User> {
+    return this.service.createOne(req, newUser);
   }
 
   @Get(ACCOUNT_VERIFICATION_ROUTE)
