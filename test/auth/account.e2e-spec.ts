@@ -7,6 +7,7 @@ import * as req from 'supertest';
 import { instance, mock } from 'ts-mockito';
 import { getConnection, Repository } from 'typeorm';
 import { CreateUserRequestDto, User, UserRoles } from 'users';
+import { WeatherProviderService } from '../../src/weather';
 
 const LOGIN_ROUTE = '/account/login';
 const REGISTER_ROUTE = '/account/register';
@@ -18,15 +19,19 @@ describe('AccountController (e2e)', () => {
   let userRespository: Repository<User>;
   let request: req.SuperTest<req.Test>;
   let mailService: MailService;
+  let weatherService: WeatherProviderService;
 
   beforeAll(async () => {
     mailService = mock(MailService);
+    weatherService = mock(WeatherProviderService);
 
     moduleFixture = await Test.createTestingModule({
       imports: [AppModule, SeederModule],
     })
       .overrideProvider(MailService)
       .useValue(instance(mailService))
+      .overrideProvider(WeatherProviderService)
+      .useValue(instance(weatherService))
       .compile();
 
     app = moduleFixture.createNestApplication();

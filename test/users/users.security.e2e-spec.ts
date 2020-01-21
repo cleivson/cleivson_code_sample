@@ -6,6 +6,7 @@ import { SeederModule, SeederService } from 'seeder';
 import { instance, mock } from 'ts-mockito';
 import { getConnection, Repository } from 'typeorm';
 import { CreateUserRequestDto, User, UserRoles } from 'users';
+import { WeatherProviderService } from 'weather';
 import { USERS_ROUTE } from '../constants';
 import { getAccessToken } from '../utils/helper.functions';
 
@@ -17,18 +18,22 @@ let seederService: SeederService;
 let userRepository: Repository<User>;
 let request: req.SuperTest<req.Test>;
 let mailService: MailService;
+let weatherService: WeatherProviderService;
 
 describe('UserController Security (e2e)', () => {
   const validUserToInsert: User = { firstName: 'User', lastName: 'test', email: 'test@test.com', password: 'test', role: UserRoles.User };
 
   beforeAll(async () => {
     mailService = mock(MailService);
+    weatherService = mock(WeatherProviderService);
 
     moduleFixture = await Test.createTestingModule({
       imports: [AppModule, SeederModule],
     })
       .overrideProvider(MailService)
       .useValue(instance(mailService))
+      .overrideProvider(WeatherProviderService)
+      .useValue(instance(weatherService))
       .compile();
 
     app = moduleFixture.createNestApplication();

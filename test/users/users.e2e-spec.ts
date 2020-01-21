@@ -7,6 +7,7 @@ import { instance, mock } from 'ts-mockito';
 import { getConnection, Repository } from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { User, UserRoles } from 'users';
+import { WeatherProviderService } from 'weather';
 import { USERS_ROUTE } from '../constants';
 import { getAccessToken } from '../utils/helper.functions';
 
@@ -21,15 +22,19 @@ describe('UserController (e2e)', () => {
   let accessToken: string;
   let validUserToInsert: Partial<User>;
   let mailService: MailService;
+  let weatherService: WeatherProviderService;
 
   beforeAll(async () => {
     mailService = mock(MailService);
+    weatherService = mock(WeatherProviderService);
 
     moduleFixture = await Test.createTestingModule({
       imports: [AppModule, SeederModule],
     })
       .overrideProvider(MailService)
       .useValue(instance(mailService))
+      .overrideProvider(WeatherProviderService)
+      .useValue(instance(weatherService))
       .compile();
 
     app = moduleFixture.createNestApplication();

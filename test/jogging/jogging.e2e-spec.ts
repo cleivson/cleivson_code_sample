@@ -4,40 +4,44 @@ import { AppModule } from 'app.module';
 import { JoggingEntry } from 'jogging';
 import { MailService } from 'mail';
 import { SeederModule, SeederService } from 'seeder';
-import { instance, mock } from 'ts-mockito';
+import { anyString, instance, mock, when } from 'ts-mockito';
 import { getConnection, Repository } from 'typeorm';
-import { User, UserRoles } from 'users';
-import { JOGGING_ROUTE } from '../constants';
+import { WeatherProviderService } from 'weather';
+import { USERS_ROUTE } from '../constants';
 import { getAccessToken } from '../utils/helper.functions';
 
 import req = require('supertest');
+
+const USER_ID = 3;
+const JOGGING_ROUTE = `${USERS_ROUTE}/${USER_ID}/jogging-entries`;
 
 describe('JoggingController (e2e)', () => {
   let app: INestApplication;
   let moduleFixture: TestingModule;
   let seederService: SeederService;
   let joggingEntryRepository: Repository<JoggingEntry>;
-  let userRepository: Repository<User>;
   let request: req.SuperTest<req.Test>;
   let accessToken: string;
-  let validUserToInsert: User;
   let validJoggingEntriesToInsert: JoggingEntry[];
   let mailService: MailService;
+  let weatherService: WeatherProviderService;
 
   beforeAll(async () => {
     mailService = mock(MailService);
+    weatherService = mock(WeatherProviderService);
 
     moduleFixture = await Test.createTestingModule({
       imports: [AppModule, SeederModule],
     })
     .overrideProvider(MailService)
     .useValue(instance(mailService))
+    .overrideProvider(WeatherProviderService)
+    .useValue(instance(weatherService))
     .compile();
 
     app = moduleFixture.createNestApplication();
     seederService = app.get(SeederService);
     joggingEntryRepository = getConnection().getRepository(JoggingEntry);
-    userRepository = getConnection().getRepository(User);
 
     await app.init();
 
@@ -49,23 +53,15 @@ describe('JoggingController (e2e)', () => {
 
     await seederService.seed();
 
+    when(weatherService.getWeatherCondition(anyString(), anyString(), anyString())).thenResolve({ description: 'sunny', location: 'Sao Paulo' });
+
     accessToken = await getAccessToken(request, seederService.getAdminUserCredentials());
 
-    validUserToInsert = {
-      firstName: 'User',
-      lastName: 'Test',
-      email: 'test',
-      password: 'password',
-      role: UserRoles.Admin,
-      verified: true,
-      locked: false,
-    };
-
     validJoggingEntriesToInsert = [
-      { location: 'Sao Paulo', distance: 70, duration: '00:01:00', date: '2019-10-05', time: '13:34:30' },
-      { location: 'New York', distance: 345, duration: '00:05:00', date: '2019-10-05', time: '13:34:35' },
-      { location: 'Las Vegas', distance: 235, duration: '00:03:30', date: '2019-10-05', time: '13:34:38' },
-      { location: 'Las Vegas', distance: 235, duration: '00:03:30', date: '2019-10-06', time: '13:34:38' },
+      { location: 'Sao Paulo', distance: 70, duration: '00:01:00', date: '2019-10-05', time: '13:34:30', userId: USER_ID },
+      { location: 'New York', distance: 345, duration: '00:05:00', date: '2019-10-05', time: '13:34:35', userId: USER_ID },
+      { location: 'Las Vegas', distance: 235, duration: '00:03:30', date: '2019-10-05', time: '13:34:38', userId: USER_ID },
+      { location: 'Las Vegas', distance: 235, duration: '00:03:30', date: '2019-10-06', time: '13:34:38', userId: USER_ID },
     ];
   });
 
@@ -226,14 +222,8 @@ describe('JoggingController (e2e)', () => {
     await moduleFixture.close();
   });
 
-  const insertUserInRepository = async () => {
-    validUserToInsert.passwordHash = 'fakepassword';
-    return userRepository.insert(validUserToInsert);
-  };
-
   const insertJoggingEntriesIntoRepository = async () => {
-    await insertUserInRepository();
-    validJoggingEntriesToInsert.forEach(joggingEntry => joggingEntry.userId = validUserToInsert.id);
+    validJoggingEntriesToInsert.forEach(entry => entry.weatherCondition = 'sunny');
     await joggingEntryRepository.insert(validJoggingEntriesToInsert);
   };
 });
