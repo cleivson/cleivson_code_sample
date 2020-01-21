@@ -30,24 +30,24 @@ export class UsersService extends TypeOrmCrudService<User> {
 
   /**
    * Creates a new user.
-   * @param user The user to be created.
+   * @param userToInsert The user to be created.
    * @throws DuplicateUserException if already exists an user with the same username.
    * @throws BadRequestException if the id and/or the passwordHash properties of the user are set.
    * @returns The created user.
    */
-  async createOne(req: CrudRequest, user: DeepPartial<User>): Promise<User> {
-    await this.checkExistingUserId(user);
+  async createOne(req: CrudRequest, userToInsert: DeepPartial<User>): Promise<User> {
+    await this.checkExistingUserId(userToInsert);
 
     try {
-      const savedUser = await super.createOne(req, user);
+      const savedUser = await super.createOne(req, userToInsert);
 
-      if (!savedUser.verified) {
+      if (!userToInsert.verified) {
         await this.verificationService.generateValidationToken(savedUser);
       }
 
       return savedUser;
     } catch (e) {
-      this.translateError(e, user);
+      this.translateError(e, userToInsert);
     }
   }
 
