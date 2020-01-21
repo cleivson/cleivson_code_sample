@@ -85,7 +85,7 @@ describe('VerificationService', () => {
     it('should throw BadRequestException if failed to send email', async () => {
       // Automatically calls the transaction function
       when(entityManagerMock.transaction(anyFunction())).thenCall(async func => func(instance(entityManagerMock)));
-      when(mailTemplateServiceMock.sendAccountValidationMail(anyString(), anyString())).thenThrow(new Error('invalid email'));
+      when(mailTemplateServiceMock.sendAccountValidationMail(anyString(), anyString())).thenThrow(new BadRequestException('invalid email'));
 
       expect(service.generateValidationToken(user)).rejects.toThrow(BadRequestException);
     });
