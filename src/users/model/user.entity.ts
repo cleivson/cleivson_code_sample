@@ -56,7 +56,6 @@ export class User {
   @ApiPropertyOptional()
   locked?: boolean;
 
-  // TODO Test that this value cannot be edited directly through the API
   /**
    * Asserts that the user has already verified his/her account.
    */

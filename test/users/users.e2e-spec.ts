@@ -242,9 +242,6 @@ describe('UserController (e2e)', () => {
     });
 
     describe(`${USERS_ROUTE}/:id (PUT)`, () => {
-
-      // TODO test if PUT can erase fields with null
-
       describe('update only password', () => {
         beforeEach(async () => {
           await insertUserInRepository();
@@ -346,8 +343,6 @@ describe('UserController (e2e)', () => {
       });
 
       describe('existing user', () => {
-        // TODO check if the jogging entries were removed
-
         beforeEach(async () => {
           await insertUserInRepository();
         });

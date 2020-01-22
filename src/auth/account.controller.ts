@@ -65,7 +65,6 @@ export class AccountController implements CrudController<User> {
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'The user does not exist or is not associated to the given token.' })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'The token is expired or user is already verified.' })
   async validate(@Query(VALIDATION_TOKEN_QUERY) token: string, @Query(VALIDATION_USERMAIL_QUERY) userEmail: string) {
-    // TODO Test that when an user changes it's email, the account is locked again until confirmation.
     await this.service.validateEmail(token, userEmail);
   }
 

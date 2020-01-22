@@ -157,10 +157,6 @@ describe('JoggingController (e2e)', () => {
             .expect(HttpStatus.BAD_REQUEST);
         });
       });
-
-      // TODO Test valid insertion
-      // TODO Test weather api results
-      // TODO Test jogging weekly report
     });
   });
 
@@ -168,7 +164,6 @@ describe('JoggingController (e2e)', () => {
     describe(`${JOGGING_ROUTE}/:id (PUT)`, () => {
       describe('non existing jogging entry', () => {
 
-        // TODO check if this endpoint makes sense
         it('should return 404 (Not Found)', () => {
           return request.put(`${JOGGING_ROUTE}/100`)
             .auth(accessToken, { type: 'bearer' })
@@ -176,11 +171,6 @@ describe('JoggingController (e2e)', () => {
             .expect(HttpStatus.NOT_FOUND);
         });
       });
-
-      // TODO Test jogging weekly report
-      // TODO Test jogging entry with weather set
-      // TODO Test replacing existing entry
-      // TODO Test changing location to see if weather api was called
     });
 
     describe(`${JOGGING_ROUTE}/:id (PATCH)`, () => {
@@ -192,11 +182,6 @@ describe('JoggingController (e2e)', () => {
             .expect(HttpStatus.NOT_FOUND);
         });
       });
-
-      // TODO Test jogging weekly report
-      // TODO Test jogging entry with weather set
-      // TODO Test updating existing entry
-      // TODO Test changing location to see if weather api was called
     });
 
     describe(`${JOGGING_ROUTE}/:id (DELETE)`, () => {
@@ -207,9 +192,6 @@ describe('JoggingController (e2e)', () => {
             .expect(HttpStatus.NOT_FOUND);
         });
       });
-
-      // TODO Test jogging weekly report
-      // TODO Test deleting existing entry
     });
   });
 
