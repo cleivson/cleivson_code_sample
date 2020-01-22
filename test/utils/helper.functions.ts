@@ -1,3 +1,4 @@
+import { LoginResponse } from 'auth/jwt';
 import { SuperTest, Test } from 'supertest';
 import { User } from 'users';
 
@@ -8,5 +9,5 @@ import { User } from 'users';
  */
 export const getAccessToken = async (request: SuperTest<Test>, credentials: Partial<User>): Promise<string> => {
   const response = await request.post('/account/login').auth(credentials.email, credentials.password, { type: 'basic' });
-  return response.body.access_token;
+  return (response.body as LoginResponse).accessToken;
 };

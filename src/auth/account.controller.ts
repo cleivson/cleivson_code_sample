@@ -1,9 +1,9 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, Request, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiBasicAuth, ApiBody, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBasicAuth, ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Crud, CrudController, CrudRequest, CrudRequestInterceptor, ParsedRequest } from '@nestjsx/crud';
 import { CreateUserRequestDto, User, userFieldsToExcludeFromResponse, UsersService } from 'users';
-import { JwtPassportService } from './jwt';
+import { JwtPassportService, LoginResponse } from './jwt';
 
 const CONTROLLER_ROUTE = 'account';
 const ACCOUNT_VERIFICATION_ROUTE = 'verify';
@@ -48,14 +48,22 @@ export class AccountController implements CrudController<User> {
 
   @Post('register')
   @UseInterceptors(CrudRequestInterceptor)
+  @ApiOperation({ summary: 'Public User registration' })
   @ApiBody({ type: CreateUserRequestDto })
+  @ApiResponse({ status: HttpStatus.CREATED, type: User })
+  @ApiResponse({ status: HttpStatus.CONFLICT, description: 'The e-mail is already registered.' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'The information about the user is invalid.' })
   async register(@ParsedRequest() req: CrudRequest, @Body() newUser: CreateUserRequestDto): Promise<User> {
     return this.service.createOne(req, newUser);
   }
 
+  @ApiOperation({ summary: 'Verify User e-mail' })
   @Get(ACCOUNT_VERIFICATION_ROUTE)
   @ApiQuery({ name: VALIDATION_TOKEN_QUERY })
   @ApiQuery({ name: VALIDATION_USERMAIL_QUERY })
+  @ApiResponse({ status: HttpStatus.OK, description: 'E-mail verified.' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'The user does not exist or is not associated to the given token.' })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'The token is expired or user is already verified.' })
   async validate(@Query(VALIDATION_TOKEN_QUERY) token: string, @Query(VALIDATION_USERMAIL_QUERY) userEmail: string) {
     // TODO Test that when an user changes it's email, the account is locked again until confirmation.
     await this.service.validateEmail(token, userEmail);
@@ -70,6 +78,9 @@ export class AccountController implements CrudController<User> {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @UseGuards(AuthGuard('basic'))
+  @ApiOperation({ summary: 'Basic Authentication Login of an User' })
+  @ApiResponse({ status: HttpStatus.OK, type: LoginResponse })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'The credentials are incorrect, the user does not exist or account is locked/unverified' })
   @ApiBasicAuth()
   async login(@Request() req) {
     const user: User = req.user;

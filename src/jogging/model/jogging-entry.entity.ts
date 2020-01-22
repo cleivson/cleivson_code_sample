@@ -22,7 +22,7 @@ export class JoggingEntry {
   @IsDefined({ groups: [CREATE] })
   @IsOptional({ groups: [UPDATE] })
   @Min(1)
-  @ApiPropertyOptional({ description: 'The total travelled distance in meters', minimum: 1})
+  @ApiPropertyOptional({ description: 'The total travelled distance in meters', minimum: 1, example: 10000})
   distance?: number;
 
   /**

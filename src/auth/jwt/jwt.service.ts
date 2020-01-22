@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from 'config';
 import { LoggedUserDto } from 'users';
-import { ConfigService } from '../../config';
-import { TokenPayload } from './dto';
+import { LoginResponse, TokenPayload } from './dto';
 import { JWT_TOKEN_EXPIRATION_CONFIG_KEY } from './jwt.constants';
 
 /**
@@ -23,15 +23,15 @@ export class JwtPassportService {
    * @param user - The logged user that must be associated with the generated Bearer token.
    * @returns The signed bearer token to be used to authenticate into future calls of the API.
    */
-  generateToken(user: LoggedUserDto) {
+  generateToken(user: LoggedUserDto): LoginResponse {
     const payload: TokenPayload = { username: user.email, sub: user.id };
 
     const signedToken = this.jwtService.sign(payload);
 
     return {
-      access_token: signedToken,
-      token_type: 'Bearer',
-      expires_in: this.expirationTime,
+      accessToken: signedToken,
+      tokenType: 'Bearer',
+      expiresIn: this.expirationTime,
     };
   }
 }

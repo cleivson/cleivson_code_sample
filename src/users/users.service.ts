@@ -24,6 +24,14 @@ export class UsersService extends TypeOrmCrudService<User> {
     super(repository);
   }
 
+  /**
+   * Checks if a verification token is valid based on its key.
+   * @param token The token key to find the verification token.
+   * @param userEmail The email of the user being validated.
+   * @throws NotFoundException when the token was not found related to the user.
+   * @throws VerificationTokenExpiredException when the token already expired.
+   * @throws UserAlreadyVerifiedException when the user associated to the token was already verified.
+   */
   async validateEmail(token: string, userEmail: string) {
     await this.verificationService.validateToken(token, userEmail);
   }

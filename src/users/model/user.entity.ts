@@ -44,17 +44,9 @@ export class User {
 
   @Column({ type: 'enum', default: UserRoles.User, enum: Object.keys(UserRoles) })
   @IsEnum(UserRoles)
-  @IsOptional({ always: true })
-  @ApiPropertyOptional()
+  @IsOptional()
+  @ApiPropertyOptional({ enum: Object.keys(UserRoles) })
   role?: UserRoles;
-
-  // TODO Think about separating the user account from the user profile
-  // TODO Test that this value cannot be edited directly through the API
-  /**
-   * Asserts that the user has already verified his/her account.
-   */
-  @Column({ default: false })
-  verified?: boolean;
 
   /**
    * The account of the user is locked.
@@ -63,6 +55,13 @@ export class User {
   @IsOptional({ always: true })
   @ApiPropertyOptional()
   locked?: boolean;
+
+  // TODO Test that this value cannot be edited directly through the API
+  /**
+   * Asserts that the user has already verified his/her account.
+   */
+  @Column({ default: false })
+  verified?: boolean;
 
   @Column({ default: 0 })
   incorrectLogins?: number;

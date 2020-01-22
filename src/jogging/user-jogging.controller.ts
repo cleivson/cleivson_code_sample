@@ -1,6 +1,6 @@
-import { ClassSerializerInterceptor, Controller, Delete, ForbiddenException, Get, Param, ParseIntPipe, Patch, Post, Put, UseGuards, UseInterceptors } from '@nestjs/common';
+import { ClassSerializerInterceptor, Controller, Delete, ForbiddenException, Get, HttpStatus, Param, ParseIntPipe, Patch, Post, Put, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Crud, CrudRequest, CrudRequestInterceptor, GetManyDefaultResponse, Override, ParsedBody, ParsedRequest } from '@nestjsx/crud';
 import { LoggedUser } from 'auth';
 import { AdvancedQuery, ParsedQuery } from 'query';
@@ -40,16 +40,23 @@ export class UserJoggingController {
 
   @Get()
   @Override()
+  @ApiResponse({ status: HttpStatus.OK, type: JoggingEntry })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Logged user cannot retrieve jogging entries of specified user.' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'User not found or entry not found.' })
   async getOne(@ParsedRequest() req: CrudRequest,
                @Param(USER_ID, ParseIntPipe) pathUserId: number,
-               @LoggedUser() user: LoggedUserDto) {
+               @LoggedUser() user: LoggedUserDto): Promise<JoggingEntry> {
     this.validateJoggingEntryOwner(user, pathUserId);
 
     return this.service.getOne(req);
   }
 
   @Post()
-  @Override('createOneBase')
+  @Override()
+  @ApiResponse({ status: HttpStatus.CREATED, type: JoggingEntry })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Logged user cannot retrieve jogging entries of specified user.' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'The information about the entry is invalid.' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'User not found.' })
   async createOne(@ParsedRequest() req: CrudRequest,
                   @ParsedBody() joggingEntry: JoggingEntry,
                   @Param(USER_ID, ParseIntPipe) pathUserId: number,
@@ -63,7 +70,11 @@ export class UserJoggingController {
   }
 
   @Patch()
-  @Override('updateOneBase')
+  @Override()
+  @ApiResponse({ status: HttpStatus.CREATED, type: JoggingEntry })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Logged user cannot update jogging entries of specified user.' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'The information about the entry is invalid.' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'User not found or entry not found.' })
   async updateOne(@ParsedRequest() req: CrudRequest,
                   @ParsedBody() joggingEntry: JoggingEntry,
                   @Param(USER_ID, ParseIntPipe) pathUserId: number,
@@ -77,7 +88,11 @@ export class UserJoggingController {
   }
 
   @Put()
-  @Override('replaceOneBase')
+  @Override()
+  @ApiResponse({ status: HttpStatus.CREATED, type: JoggingEntry })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Logged user cannot update jogging entries of specified user.' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'The information about the entry is invalid.' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'User not found or entry not found.' })
   async replaceOne(@ParsedRequest() req: CrudRequest,
                    @ParsedBody() joggingEntry: JoggingEntry,
                    @Param(USER_ID, ParseIntPipe) pathUserId: number,
@@ -91,7 +106,10 @@ export class UserJoggingController {
   }
 
   @Delete()
-  @Override('deleteOneBase')
+  @Override()
+  @ApiResponse({ status: HttpStatus.OK, description: 'The entry was deleted.' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Logged user cannot delete jogging entries of specified user.' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'User not found or entry not found.' })
   async deleteOne(@ParsedRequest() req: CrudRequest,
                   @Param(USER_ID, ParseIntPipe) pathUserId: number,
                   @LoggedUser() user: LoggedUserDto) {
@@ -101,13 +119,15 @@ export class UserJoggingController {
   }
 
   @Get()
+  @Override('getManyBase')
+  @UseInterceptors(CrudRequestInterceptor)
   @ApiOperation({ summary: 'Get many jogging entries related to a specific user' })
   @ApiQuery({ name: 'query', type: 'string', required: false })
   @ApiQuery({ name: 'limit', type: 'number', required: false, schema: { minimum: 1 } })
   @ApiQuery({ name: 'page', type: 'number', required: false, schema: { minimum: 1 } })
   @ApiQuery({ name: 'sort', type: 'string', isArray: true, required: false })
-  @Override('getManyBase')
-  @UseInterceptors(CrudRequestInterceptor)
+  @ApiResponse({ type: JoggingEntry, isArray: true, status: HttpStatus.OK })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid query filter.' })
   async getUserJoggingEntries(@ParsedRequest() req: CrudRequest,
                               @ParsedQuery() query: AdvancedQuery<JoggingEntry>,
                               @Param(USER_ID, ParseIntPipe) pathUserId: number,
@@ -120,6 +140,9 @@ export class UserJoggingController {
 
   @Get('/weekly-report')
   @ApiOperation({ summary: 'Generate jogging weekly report for a specific user' })
+  @ApiResponse({ status: HttpStatus.OK, type: WeeklyReportDto, isArray: true })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Logged user cannot generate report of jogging entries for specified user.' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'User not found.' })
   async generateWeeklyReport(@Param(USER_ID, ParseIntPipe) pathUserId: number,
                              @LoggedUser() user: LoggedUserDto): Promise<GetManyDefaultResponse<WeeklyReportDto> | WeeklyReportDto[]> {
 

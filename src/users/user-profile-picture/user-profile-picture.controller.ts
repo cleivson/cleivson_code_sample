@@ -1,7 +1,7 @@
-import { Controller, Get, HttpStatus, Param, ParseIntPipe, Res, UploadedFile, UseGuards, UseInterceptors, Put } from '@nestjs/common';
+import { Controller, Get, HttpStatus, Param, ParseIntPipe, Put, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiProduces, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Crud, CrudController, CrudRequest, CrudRequestInterceptor, ParsedRequest } from '@nestjsx/crud';
 import { LoggedUser } from 'auth';
 import { Response } from 'express';
@@ -48,11 +48,15 @@ export class UserProfilePictureController implements CrudController<UserProfileP
 
   @Put(PROFILE_PICTURE_ROUTE)
   @UseInterceptors(FileInterceptor('picture'), CrudRequestInterceptor)
+  @ApiOperation({ summary: 'Upload User profile picture' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     description: 'User profile picture',
     type: ProfilePictureDto,
   })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Profile picture was updated.' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'The user was not found.' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'The logged user cannot update the profile picture of this user.' })
   async uploadFile(@ParsedRequest() req: CrudRequest,
                    @UploadedFile() file: Buffer,
                    @LoggedUser() loggedUser: LoggedUserDto,
@@ -67,12 +71,17 @@ export class UserProfilePictureController implements CrudController<UserProfileP
   }
 
   @Get(PROFILE_PICTURE_ROUTE)
+  @ApiOperation({ summary: 'Retrieve User profile picture' })
   @ApiParam({ name: USER_ID })
+  @ApiResponse({ status: HttpStatus.OK, type: ArrayBuffer })
+  @ApiResponse({ status: HttpStatus.OK, type: SharedArrayBuffer })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'The user was not found.' })
+  @ApiResponse({ status: HttpStatus.NO_CONTENT, description: 'There is no profile picture associated with the user.' })
+  @ApiProduces('jpeg')
   @UseInterceptors(CrudRequestInterceptor)
   async getFile(@Res() res: Response, @Param(USER_ID, ParseIntPipe) userId: number) {
     const profilePicture = await this.service.findOne({ userId }, { relations: ['user'] });
 
-    // TODO Test
     if (profilePicture && profilePicture.picture) {
       res.status(HttpStatus.OK).type('jpeg').send(profilePicture.picture);
     } else {

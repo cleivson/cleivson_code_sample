@@ -51,6 +51,11 @@ export class InviteService {
    * Accepts an invite request by providing the invite token and the complimentary needed information to create an user.
    * @param acceptRequest The request to accept an registry invitation.
    * @param req The http crud request.
+   * @throws ExpiredTokenException if the token is expired.
+   * @throws InvalidTokenException if it was not possible to parse the token.
+   * @throws UnauthorizedException if there was any unknown problem with the format of the token.
+   * @throws DuplicateUserException if the token is associated to an email of a registered user.
+   * @throws BadRequestException if the id and/or the passwordHash properties of the user are set.
    */
   async acceptInvite(acceptRequest: AcceptInviteRequest, req: CrudRequest) {
     const inviteToken = await this.validateInviteToken(acceptRequest.token);
