@@ -38,6 +38,16 @@ const USER_ID = 'userId';
 export class UserJoggingController {
   constructor(private readonly service: JoggingService) { }
 
+  @Get()
+  @Override()
+  async getOne(@ParsedRequest() req: CrudRequest,
+               @Param(USER_ID, ParseIntPipe) pathUserId: number,
+               @LoggedUser() user: LoggedUserDto) {
+    this.validateJoggingEntryOwner(user, pathUserId);
+
+    return this.service.getOne(req);
+  }
+
   @Post()
   @Override('createOneBase')
   async createOne(@ParsedRequest() req: CrudRequest,

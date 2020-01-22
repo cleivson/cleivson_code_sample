@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, Request, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, Request, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBasicAuth, ApiBody, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Crud, CrudController, CrudRequest, CrudRequestInterceptor, ParsedRequest } from '@nestjsx/crud';
@@ -68,6 +68,7 @@ export class AccountController implements CrudController<User> {
    * @returns A bearer token representing the authenticated user.
    */
   @Post('login')
+  @HttpCode(HttpStatus.OK)
   @UseGuards(AuthGuard('basic'))
   @ApiBasicAuth()
   async login(@Request() req) {
