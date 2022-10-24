@@ -1,7 +1,7 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from 'config';
-import { mock, spy, when } from 'ts-mockito';
+import { deepEqual, mock, spy, when } from 'ts-mockito';
 import { User, UsersService } from 'users';
 import { LockedAccountException, UnverifiedEmailException } from '../exceptions';
 import { TokenPayload } from './dto';
@@ -55,7 +55,7 @@ describe('JwtPassportStrategy', () => {
 
     describe('token with id of non existent user', () => {
       beforeEach(() => {
-        when(usersService.findOne(userId)).thenResolve(undefined);
+        when(usersService.findOne(deepEqual({ where: { id: userId } }))).thenResolve(undefined);
       });
 
       it('should throw UnauthorizedException', () => {
@@ -68,7 +68,7 @@ describe('JwtPassportStrategy', () => {
 
       beforeEach(() => {
         persistedUser = { id: userId, firstName: 'User', lastName: 'Test', email: 'invalid@test.com' };
-        when(usersService.findOne(userId)).thenResolve(persistedUser);
+        when(usersService.findOne(deepEqual({ where: { id: userId } }))).thenResolve(persistedUser);
       });
 
       describe('with different email', () => {

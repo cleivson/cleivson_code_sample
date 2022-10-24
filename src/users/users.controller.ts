@@ -1,4 +1,4 @@
-import { Controller, Get, HttpStatus, Param, ParseIntPipe, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, HttpStatus, Param, ParseIntPipe, Post, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Crud, CrudController, CrudRequest, CrudRequestInterceptor, Override, ParsedBody, ParsedRequest } from '@nestjsx/crud';
@@ -40,6 +40,7 @@ export class UsersController implements CrudController<User> {
     return this;
   }
 
+  @Post()
   @Roles(UserRoles.Admin, UserRoles.UserManager)
   @Override()
   @ApiResponse({ status: HttpStatus.CREATED, type: User })

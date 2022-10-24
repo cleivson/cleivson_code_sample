@@ -1,11 +1,12 @@
 import { HttpStatus, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { AppModule } from 'app.module';
 import { MailService } from 'mail';
 import { SeederModule, SeederService } from 'seeder';
 import * as req from 'supertest';
 import { instance, mock } from 'ts-mockito';
-import { getConnection, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { CreateUserRequestDto, User, UserRoles } from 'users';
 import { WeatherProviderService } from '../../src/weather';
 
@@ -16,7 +17,7 @@ describe('AccountController (e2e)', () => {
   let app: INestApplication;
   let moduleFixture: TestingModule;
   let seederService: SeederService;
-  let userRespository: Repository<User>;
+  let userRepository: Repository<User>;
   let request: req.SuperTest<req.Test>;
   let mailService: MailService;
   let weatherService: WeatherProviderService;
@@ -36,7 +37,7 @@ describe('AccountController (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     seederService = app.get(SeederService);
-    userRespository = getConnection().getRepository(User);
+    userRepository = app.get(getRepositoryToken(User));
 
     await app.init();
 
@@ -45,6 +46,10 @@ describe('AccountController (e2e)', () => {
 
   beforeEach(async () => {
     jest.setTimeout(10000);
+  });
+
+  beforeEach(async () => {
+    await userRepository.manager.connection.synchronize(true);
     await seederService.seed();
   });
 
@@ -71,12 +76,12 @@ describe('AccountController (e2e)', () => {
         return request
           .post(LOGIN_ROUTE)
           .auth(credentials.email, credentials.password, { type: 'basic' })
-          .expect(HttpStatus.CREATED)
+          .expect(HttpStatus.OK)
           .expect(response => {
-            const access_token = response.body.access_token;
+            const accessToken = response.body.accessToken;
 
-            expect(access_token).toBeDefined();
-            expect(access_token.split('.')).toHaveLength(3); // Bearer token has 3 parts separated by .
+            expect(accessToken).toBeDefined();
+            expect(accessToken.split('.')).toHaveLength(3); // Bearer token has 3 parts separated by .
           });
       });
 
@@ -86,12 +91,12 @@ describe('AccountController (e2e)', () => {
         return request
           .post(LOGIN_ROUTE)
           .auth(credentials.email, credentials.password, { type: 'basic' })
-          .expect(HttpStatus.CREATED)
+          .expect(HttpStatus.OK)
           .expect(response => {
-            const access_token = response.body.access_token;
+            const accessToken = response.body.accessToken;
 
-            expect(access_token).toBeDefined();
-            expect(access_token.split('.')).toHaveLength(3); // Bearer token has 3 parts separated by .
+            expect(accessToken).toBeDefined();
+            expect(accessToken.split('.')).toHaveLength(3); // Bearer token has 3 parts separated by .
           });
       });
 
@@ -101,12 +106,12 @@ describe('AccountController (e2e)', () => {
         return request
           .post(LOGIN_ROUTE)
           .auth(credentials.email, credentials.password, { type: 'basic' })
-          .expect(HttpStatus.CREATED)
+          .expect(HttpStatus.OK)
           .expect(response => {
-            const access_token = response.body.access_token;
+            const accessToken = response.body.accessToken;
 
-            expect(access_token).toBeDefined();
-            expect(access_token.split('.')).toHaveLength(3); // Bearer token has 3 parts separated by '.'
+            expect(accessToken).toBeDefined();
+            expect(accessToken.split('.')).toHaveLength(3); // Bearer token has 3 parts separated by '.'
             expectResponseNotToContainPasswordInfo(response);
           });
       });
@@ -159,13 +164,13 @@ describe('AccountController (e2e)', () => {
       });
 
       it('should create the user as regular user', async () => {
-        const createdUser = await userRespository.findOne({ email: validCredentials.email });
+        const createdUser = await userRepository.findOne({ where: { email: validCredentials.email } });
 
         expect(createdUser.role).toEqual(UserRoles.User);
       });
 
       it('should create the user as unverified', async () => {
-        const createdUser = await userRespository.findOne({ email: validCredentials.email });
+        const createdUser = await userRepository.findOne({ where: { email: validCredentials.email } });
 
         expect(createdUser.verified).toBeFalsy();
       });
@@ -181,21 +186,17 @@ describe('AccountController (e2e)', () => {
 
       describe('with verified email', () => {
         beforeEach(async () => {
-          const createdUser = await userRespository.findOne({ email: validCredentials.email });
+          const createdUser = await userRepository.findOne({ where: { email: validCredentials.email } });
           createdUser.verified = true;
-          await userRespository.save(createdUser);
+          await userRepository.save(createdUser);
         });
         it('should be able to login', async () => {
           await request.post(LOGIN_ROUTE)
             .auth(validCredentials.email, validCredentials.password, { type: 'basic' })
-            .expect(HttpStatus.CREATED);
+            .expect(HttpStatus.OK);
         });
       });
     });
-  });
-
-  afterEach(async () => {
-    await getConnection().synchronize(true);
   });
 
   afterAll(async () => {

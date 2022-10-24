@@ -41,7 +41,7 @@ describe('BasicPassportStrategy', () => {
 
     describe('non existent user', () => {
       beforeEach(() => {
-        when(usersService.findOne(deepEqual({ email: userEmail }))).thenResolve();
+        when(usersService.findOne(deepEqual({ where: { email: userEmail } }))).thenResolve();
       });
 
       it('should throw UnauthorizedException', async () => {
@@ -58,7 +58,7 @@ describe('BasicPassportStrategy', () => {
       beforeEach(() => {
         user = { passwordHash, email: userEmail, id: 23, role: UserRoles.User, verified: true, locked: false };
 
-        when(usersService.findOne(deepEqual({ email: userEmail }))).thenResolve(user);
+        when(usersService.findOne(deepEqual({ where: { email: userEmail } }))).thenResolve(user);
       });
 
       describe('with wrong password', () => {

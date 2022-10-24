@@ -61,7 +61,7 @@ export class UserProfilePictureController implements CrudController<UserProfileP
                    @UploadedFile() file: Buffer,
                    @LoggedUser() loggedUser: LoggedUserDto,
                    @Param(USER_ID, ParseIntPipe) userId: number) {
-    const userToBeModified: User = await this.usersService.findOne(userId);
+    const userToBeModified: User = await this.usersService.findOne({ where: { id: userId } });
 
     checkPermission(loggedUser, userToBeModified);
 
@@ -80,7 +80,7 @@ export class UserProfilePictureController implements CrudController<UserProfileP
   @ApiProduces('jpeg')
   @UseInterceptors(CrudRequestInterceptor)
   async getFile(@Res() res: Response, @Param(USER_ID, ParseIntPipe) userId: number) {
-    const profilePicture = await this.service.findOne({ userId }, { relations: ['user'] });
+    const profilePicture = await this.service.findOne({ where: { userId }, relations: ['user'] });
 
     if (profilePicture && profilePicture.picture) {
       res.status(HttpStatus.OK).type('jpeg').send(profilePicture.picture);

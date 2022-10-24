@@ -4,13 +4,14 @@ import { AppModule } from 'app.module';
 import { MailService } from 'mail';
 import { SeederModule, SeederService } from 'seeder';
 import { instance, mock } from 'ts-mockito';
-import { getConnection, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { CreateUserRequestDto, User, UserRoles } from 'users';
 import { WeatherProviderService } from 'weather';
 import { USERS_ROUTE } from '../constants';
 import { getAccessToken } from '../utils/helper.functions';
 
 import req = require('supertest');
+import { getRepositoryToken } from '@nestjs/typeorm';
 
 let app: INestApplication;
 let moduleFixture: TestingModule;
@@ -21,6 +22,8 @@ let mailService: MailService;
 let weatherService: WeatherProviderService;
 
 describe('UserController Security (e2e)', () => {
+  jest.setTimeout(10000);
+
   const validUserToInsert: User = { firstName: 'User', lastName: 'test', email: 'test@test.com', password: 'test', role: UserRoles.User };
 
   beforeAll(async () => {
@@ -38,15 +41,18 @@ describe('UserController Security (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     seederService = app.get(SeederService);
-    userRepository = getConnection().getRepository(User);
+    userRepository = app.get(getRepositoryToken(User));
 
     await app.init();
 
     request = req(app.getHttpServer());
   });
 
+  beforeEach(() => {
+  });
+
   beforeEach(async () => {
-    jest.setTimeout(10000);
+    await userRepository.manager.connection.synchronize(true);
     await seederService.seed();
   });
 
@@ -127,10 +133,6 @@ describe('UserController Security (e2e)', () => {
     });
   });
 
-  afterEach(async () => {
-    await getConnection().synchronize(true);
-  });
-
   afterAll(async () => {
     await app.close();
     await moduleFixture.close();
@@ -181,7 +183,7 @@ function testSameUserEndpoints(expectAuthorized: boolean, getCredentials?: (seed
     beforeEach(async () => {
       credentials = getCredentials(seederService);
       accessToken = await getAccessToken(request, credentials);
-      loggedUser = await userRepository.findOne({ email: credentials.email });
+      loggedUser = await userRepository.findOne({ where: { email: credentials.email } });
       removeNonWhitelistedProperties(loggedUser);
 
       loggedUserRoute = `${USERS_ROUTE}/${loggedUser.id}`;
@@ -311,7 +313,7 @@ async function testPutUser(expectAuthorized: boolean, specificUserRoute: string,
 }
 
 async function verifyUser(userCredential: User) {
-  const createdUser = await userRepository.findOne({ email: userCredential.email });
+  const createdUser = await userRepository.findOne({ where: { email: userCredential.email } });
   createdUser.verified = true;
   await userRepository.save(createdUser);
 }

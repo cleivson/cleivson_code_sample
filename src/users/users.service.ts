@@ -169,7 +169,7 @@ export class UsersService extends TypeOrmCrudService<User> {
 
   private async checkExistingUserId(user: DeepPartial<User>) {
     if (user.id) {
-      const existingUser = await this.repo.findOne(user.id);
+      const existingUser = await this.repo.findOne({ where: { id: user.id }});
       if (existingUser) {
         // TODO It's more secure to return a status Ok and send an e-mail to the registered user with a password reset,
         // this way a hacker wouldn't be able to discover the list of users
@@ -179,7 +179,7 @@ export class UsersService extends TypeOrmCrudService<User> {
   }
 
   private async getCurrentEmail(dto: DeepPartial<User>) {
-    const existingUser = await this.findOne(dto.id);
+    const existingUser = await this.findOne({ where: { id: dto.id } });
 
     let oldEmail: string;
 

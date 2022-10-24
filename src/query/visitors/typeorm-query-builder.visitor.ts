@@ -65,7 +65,7 @@ export class TypeormQueryBuilderVisitor<T> implements AdvancedQueryVisitor<T> {
   public visitFilterExpression(expression: FilterExpression<T>) {
     const paramName = this.getNextParameterName();
 
-    this.formattedQuery += `${expression.field} ${this.transformOperator(expression.operator)} :${paramName}`;
+    this.formattedQuery += `${String(expression.field)} ${this.transformOperator(expression.operator)} :${paramName}`;
     this.queryParametersMap[paramName] = expression.value;
   }
 

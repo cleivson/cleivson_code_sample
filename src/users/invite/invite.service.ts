@@ -88,7 +88,7 @@ export class InviteService {
   }
 
   private async validateExistingUser(email: string) {
-    const existingUser = await this.usersService.findOne({ email }, { select: ['id'] });
+    const existingUser = await this.usersService.findOne({ where: { email }, select: ['id'] });
     if (existingUser) {
       throw new DuplicateUserException(email);
     }

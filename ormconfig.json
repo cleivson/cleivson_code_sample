@@ -6,7 +6,7 @@
     "logger": "debug",
     "username": "root",
     "password": "adminpwd",
-    "database": "toptal",
+    "database": "jogging-tracker",
     "entities": [
       "dist/**/*.entity{.ts,.js}"
     ],
@@ -17,13 +17,13 @@
     "name": "test",
     "type": "mysql",
     "host": "localhost",
-    "port": 3306,
+    "port": 3307,
     "logger": "debug",
     "username": "root",
     "password": "adminpwd",
-    "database": "toptal-test",
+    "database": "jogging-tracker-test",
     "entities": [
-      "dist/**/*.entity{.ts,.js}"
+      "**/*.entity{.ts,.js}"
     ],
     "synchronize": true,
     "max_allowed_packet": "100M",

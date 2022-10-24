@@ -20,7 +20,7 @@ export const checkPermissionToUpdate =
 
     checkPermissionToUnlock(loggedUser, dto);
 
-    const existingUser = await usersService.findOne(paramId);
+    const existingUser = await usersService.findOne({ where: { id: paramId } });
 
     if (existingUser) {
       checkPermission(loggedUser, existingUser);

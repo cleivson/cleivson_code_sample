@@ -35,7 +35,7 @@ export class BasicPassportStrategy extends PassportStrategy(BasicStrategy) {
      * @throws UnverifiedEmailException if the user did not verify his email yet.
      */
     async validate(username: string, passwordToVerify: string): Promise<User> {
-      const user = await this.usersService.findOne({ email: username });
+      const user = await this.usersService.findOne({ where: { email: username } });
 
       if (!user) {
         throw new UnauthorizedException();

@@ -56,11 +56,11 @@ describe('Account Controller', () => {
       it('should return generated token for logged user', async () => {
         const bearerToken = 'token';
 
-        when(jwtServiceMock.generateToken(loginUser)).thenReturn({ access_token: bearerToken, token_type: 'Bearer', expires_in: '1d' });
+        when(jwtServiceMock.generateToken(loginUser)).thenReturn({ accessToken: bearerToken, tokenType: 'Bearer', expiresIn: '1d' });
 
         const loginResult = await controller.login({ user: loginUser });
 
-        expect(loginResult.access_token).toEqual(bearerToken);
+        expect(loginResult.accessToken).toEqual(bearerToken);
       });
     });
   });

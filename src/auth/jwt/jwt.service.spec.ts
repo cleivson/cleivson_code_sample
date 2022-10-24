@@ -53,7 +53,7 @@ describe('JwtPassportService', () => {
         sub: user.id,
       });
 
-      expect(token).toEqual({ access_token: expectedToken, token_type: 'Bearer', expires_in: EXPIRES_IN });
+      expect(token).toEqual({ accessToken: expectedToken, tokenType: 'Bearer', expiresIn: EXPIRES_IN });
 
       signMock.mockRestore();
     });

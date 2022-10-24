@@ -32,7 +32,7 @@ export class JwtPassportStrategy extends PassportStrategy(Strategy) {
   async validate(payload: TokenPayload): Promise<LoggedUserDto> {
     const userId = payload.sub;
 
-    const persistedUser = await this.usersService.findOne(userId);
+    const persistedUser = await this.usersService.findOne({ where: { id: userId } });
 
     // The user to whom the token was issued doesn't exist anymore or had it's username changed
     if (!persistedUser || persistedUser.email !== payload.username) {

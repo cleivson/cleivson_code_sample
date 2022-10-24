@@ -3,6 +3,6 @@ import { PARSED_QUERY_REQUEST_KEY } from './request.constants';
 
 export const ParsedQuery = createParamDecorator(
   (_, req): ParameterDecorator => {
-    return req.query[PARSED_QUERY_REQUEST_KEY];
+    return req.switchToHttp().getRequest().query[PARSED_QUERY_REQUEST_KEY];
   },
 );

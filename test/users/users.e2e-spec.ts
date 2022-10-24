@@ -4,7 +4,7 @@ import { AppModule } from 'app.module';
 import { MailService } from 'mail';
 import { SeederModule, SeederService } from 'seeder';
 import { instance, mock } from 'ts-mockito';
-import { getConnection, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { User, UserRoles } from 'users';
 import { WeatherProviderService } from 'weather';
@@ -12,6 +12,7 @@ import { USERS_ROUTE } from '../constants';
 import { getAccessToken } from '../utils/helper.functions';
 
 import req = require('supertest');
+import { getRepositoryToken } from '@nestjs/typeorm';
 
 describe('UserController (e2e)', () => {
   let app: INestApplication;
@@ -39,15 +40,19 @@ describe('UserController (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     seederService = app.get(SeederService);
-    userRepository = getConnection().getRepository(User);
+    userRepository = app.get(getRepositoryToken(User));
 
     await app.init();
 
     request = req(app.getHttpServer());
   });
 
-  beforeEach(async () => {
+  beforeEach(() => {
     jest.setTimeout(10000);
+  });
+
+  beforeEach(async () => {
+    await userRepository.manager.connection.synchronize(true);
 
     await seederService.seed();
 
@@ -123,7 +128,7 @@ describe('UserController (e2e)', () => {
           it('should return 409 (Conflict)', async () => {
             const existingUserCredentials = seederService.getRegularUserCredentials();
 
-            const existingUser = await userRepository.findOne({ email: existingUserCredentials.email });
+            const existingUser = await userRepository.findOne({ where: { email: existingUserCredentials.email } });
 
             return request.post(USERS_ROUTE)
               .auth(accessToken, { type: 'bearer' })
@@ -142,11 +147,17 @@ describe('UserController (e2e)', () => {
       });
 
       describe('user with password hash', () => {
-        it('should return 400 (Bad Request)', () => {
-          return request.post(USERS_ROUTE)
+        it('should ignore it and rehash', async () => {
+          const wronghash = 'passwordhash';
+          await request.post(USERS_ROUTE)
             .auth(accessToken, { type: 'bearer' })
-            .send({ ...validUserToInsert, passwordHash: 'passwordhash' })
-            .expect(HttpStatus.BAD_REQUEST);
+            .send({ ...validUserToInsert, passwordHash: wronghash })
+            .expect(HttpStatus.CREATED);
+
+          const insertedUser = await userRepository.findOne({ where: { email: validUserToInsert.email } });
+
+          expect(insertedUser.passwordHash).not.toEqual(wronghash);
+          expect(insertedUser.passwordHash).not.toBeFalsy();
         });
       });
 
@@ -181,7 +192,7 @@ describe('UserController (e2e)', () => {
             .send(validUserToInsert)
             .expect(HttpStatus.CREATED);
 
-          const insertedUser = await userRepository.findOne({ email: validUserToInsert.email });
+          const insertedUser = await userRepository.findOne({ where: { email: validUserToInsert.email } });
 
           expect(insertedUser.role).toEqual(UserRoles.User);
         });
@@ -194,7 +205,7 @@ describe('UserController (e2e)', () => {
             .send(validUserToInsert)
             .expect(HttpStatus.CREATED);
 
-          const insertedUser = await userRepository.findOne({ email: validUserToInsert.email });
+          const insertedUser = await userRepository.findOne({ where: { email: validUserToInsert.email } });
 
           expect(insertedUser.password).toBeUndefined();
           expect(insertedUser.passwordHash).toBeDefined();
@@ -257,7 +268,7 @@ describe('UserController (e2e)', () => {
               expectResponseNotToContainPasswordInfo(response.body);
             });
 
-          const persistedUser = await userRepository.findOne(validUserToInsert.id);
+          const persistedUser = await userRepository.findOne({ where: { id: validUserToInsert.id } });
 
           const expectedReponse = { ...validUserToInsert, password };
           expectUsersToBeEqual(persistedUser, expectedReponse);
@@ -279,7 +290,7 @@ describe('UserController (e2e)', () => {
               expectResponseNotToContainPasswordInfo(response.body);
             });
 
-          const persistedUser = await userRepository.findOne(validUserToInsert.id);
+          const persistedUser = await userRepository.findOne({ where: { id: validUserToInsert.id } });
 
           const expectedReponse = { ...validUserToInsert, role };
           expectUsersToBeEqual(persistedUser, expectedReponse);
@@ -303,7 +314,7 @@ describe('UserController (e2e)', () => {
               expectResponseNotToContainPasswordInfo(response.body);
             });
 
-          const persistedUser = await userRepository.findOne(validUserToInsert.id);
+          const persistedUser = await userRepository.findOne({ where: { id: validUserToInsert.id } });
 
           const expectedReponse = { ...validUserToInsert, password };
           expectUsersToBeEqual(persistedUser, expectedReponse);
@@ -325,7 +336,7 @@ describe('UserController (e2e)', () => {
               expectResponseNotToContainPasswordInfo(response.body);
             });
 
-          const persistedUser = await userRepository.findOne(validUserToInsert.id);
+          const persistedUser = await userRepository.findOne({ where: { id: validUserToInsert.id } });
 
           const expectedReponse = { ...validUserToInsert, role };
           expectUsersToBeEqual(persistedUser, expectedReponse);
@@ -353,16 +364,12 @@ describe('UserController (e2e)', () => {
             .expect(HttpStatus.OK)
             .expect(response => expectResponseNotToContainPasswordInfo(response.body));
 
-          const user: User = await userRepository.findOne(validUserToInsert.id);
+          const user: User = await userRepository.findOne({ where: { id: validUserToInsert.id } });
 
-          expect(user).toBeUndefined();
+          expect(user).toBeNull();
         });
       });
     });
-  });
-
-  afterEach(async () => {
-    await getConnection().synchronize(true);
   });
 
   afterAll(async () => {

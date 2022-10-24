@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { CrudValidationGroups } from '@nestjsx/crud';
 import { Exclude } from 'class-transformer';
-import { IsDefined, IsEmail, IsEnum, IsOptional } from 'class-validator';
+import { IsDefined, IsEmail, IsEmpty, IsEnum, IsOptional } from 'class-validator';
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 import { UserRoles } from './users.roles';
 
@@ -59,12 +59,15 @@ export class User {
   /**
    * Asserts that the user has already verified his/her account.
    */
+  @IsOptional({ always: true })
   @Column({ default: false })
   verified?: boolean;
 
+  @IsOptional({ always: true })
   @Column({ default: 0 })
   incorrectLogins?: number;
 
+  @IsOptional({ always: true })
   @Column()
   passwordHash?: string;
 }

@@ -1,6 +1,6 @@
 ## Description
 
-Toptal screening project consisting of a REST API for keeping track of jogging times of users.
+Project consisting of a REST API for keeping track of jogging times of users.
 
 ## Installation (Linux/Mac OS)
 
@@ -12,21 +12,21 @@ $ nvm install node lts/erbium
 - Clone this repository and install the dependencies using npm.
 
 ```bash
-$ git clone https://git.toptal.com/Ivan-Ilijasic/cleivson-siqueira-de-arruda.git
-$ cd cleivson-siqueira-de-arruda
+$ git clone git@github.com:cleivson/cleivson_code_sample.git
+$ cd cleivson_code_sample
 $ npm install
 ```
-- Install the latest version of [@nestjs/cli](https://docs.nestjs.com/cli/overview)
 
 ## Installation (Windows)
 
-Not yet supported because of [bcrypt](https://www.npmjs.com/package/bcrypt) dependency. We plan to change this dependency in future.
+Not yet supported because of [bcrypt](https://www.npmjs.com/package/bcrypt) dependency. We plan to change this dependency in the future.
 
 ## Running the app
 
 ### Prerequisites
 
-In order to run the app, you need no create a database (only tested with MySql until now) and put its configurations in the file ormconfig.json.
+In order to run the app, you need to create a database (only tested with MySql until now) and put its configurations in the file ormconfig.json.
+You can use the sample `docker-compose.yaml` file to run a simple configuration (not production ready) of the database for testing.
 
 Also, you have to setup the API Key from [SendGrid](https://sendgrid.com/). To do this, follow the steps in: https://app.sendgrid.com/guide/integrate/langs/nodejs. Make sure you have your API Key under SENDGRID_API_KEY in the .env.{environment} file or as an environment variable.
 
@@ -44,6 +44,13 @@ $ npm run start:dev
 # production mode
 $ npm run start:prod
 ```
+
+### Seed data
+
+To make it easier to test the app, there's a seed service that helps pre populate some users. This service is also used by integration tests to create the expected scenarios for the tests.
+
+To run the seeder service, type:
+`npm run seed`
 
 ## Test
 

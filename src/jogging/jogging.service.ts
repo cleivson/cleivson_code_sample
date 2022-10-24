@@ -53,7 +53,7 @@ export class JoggingService extends TypeOrmCrudService<JoggingEntry> {
    * @returns The updated jogging entry.
    */
   async updateJoggingEntry(joggingEntry: JoggingEntry): Promise<JoggingEntry> {
-    const existingJoggingEntry = await this.repo.findOne(joggingEntry.id);
+    const existingJoggingEntry = await this.repo.findOne({ where: { id: joggingEntry.id } });
 
     if (!existingJoggingEntry) {
       this.throwNotFoundException(this.repo.metadata.targetName);
@@ -74,7 +74,7 @@ export class JoggingService extends TypeOrmCrudService<JoggingEntry> {
       await this.validateUserNotChanged(joggingEntry);
     }
 
-    const ownerUser = await this.repo.manager.getRepository(User).findOne(joggingEntry.userId, { select: ['id'] });
+    const ownerUser = await this.repo.manager.getRepository(User).findOne({ where: { id: joggingEntry.userId }, select: ['id'] });
 
     if (!ownerUser) {
       throw new InvalidUserException();
@@ -123,13 +123,13 @@ export class JoggingService extends TypeOrmCrudService<JoggingEntry> {
    * @param userId The id of the user to whom the jogging entries must be related.
    */
   async generateWeeklyReport(userId: number): Promise<WeeklyReportDto[]> {
-    const userJoggingEntries = await this.repo.find({ userId });
+    const userJoggingEntries = await this.repo.find({ where: { userId } });
 
     return this.reportGenerator.generate(userJoggingEntries);
   }
 
   private async validateUserNotChanged(joggingEntry: JoggingEntry) {
-    const existingJoggingEntry = await this.repo.findOne(joggingEntry.id);
+    const existingJoggingEntry = await this.repo.findOne({ where: { id: joggingEntry.id } });
     if (!existingJoggingEntry) {
       this.throwNotFoundException(this.repo.metadata.targetName);
     }

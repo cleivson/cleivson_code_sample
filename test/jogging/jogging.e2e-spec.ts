@@ -5,12 +5,13 @@ import { JoggingEntry } from 'jogging';
 import { MailService } from 'mail';
 import { SeederModule, SeederService } from 'seeder';
 import { anyString, instance, mock, when } from 'ts-mockito';
-import { getConnection, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { WeatherProviderService } from 'weather';
 import { USERS_ROUTE } from '../constants';
 import { getAccessToken } from '../utils/helper.functions';
 
 import req = require('supertest');
+import { getRepositoryToken } from '@nestjs/typeorm';
 
 const USER_ID = 3;
 const JOGGING_ROUTE = `${USERS_ROUTE}/${USER_ID}/jogging-entries`;
@@ -25,6 +26,8 @@ describe('JoggingController (e2e)', () => {
   let validJoggingEntriesToInsert: JoggingEntry[];
   let mailService: MailService;
   let weatherService: WeatherProviderService;
+
+  jest.setTimeout(10000);
 
   beforeAll(async () => {
     mailService = mock(MailService);
@@ -41,7 +44,7 @@ describe('JoggingController (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     seederService = app.get(SeederService);
-    joggingEntryRepository = getConnection().getRepository(JoggingEntry);
+    joggingEntryRepository = app.get(getRepositoryToken(JoggingEntry));
 
     await app.init();
 
@@ -49,7 +52,7 @@ describe('JoggingController (e2e)', () => {
   });
 
   beforeEach(async () => {
-    jest.setTimeout(10000);
+    await joggingEntryRepository.manager.connection.synchronize(true);
 
     await seederService.seed();
 
@@ -164,22 +167,22 @@ describe('JoggingController (e2e)', () => {
     describe(`${JOGGING_ROUTE}/:id (PUT)`, () => {
       describe('non existing jogging entry', () => {
 
-        it('should return 404 (Not Found)', () => {
+        it('should return 400 (Bad Request)', () => {
           return request.put(`${JOGGING_ROUTE}/100`)
             .auth(accessToken, { type: 'bearer' })
             .send(validJoggingEntriesToInsert[0])
-            .expect(HttpStatus.NOT_FOUND);
+            .expect(HttpStatus.BAD_REQUEST);
         });
       });
     });
 
     describe(`${JOGGING_ROUTE}/:id (PATCH)`, () => {
       describe('non existing joggingEntry', () => {
-        it('should return 404 (Not Found)', () => {
+        it('should return 400 (Bad Request)', () => {
           return request.patch(`${JOGGING_ROUTE}/100`)
             .auth(accessToken, { type: 'bearer' })
             .send(validJoggingEntriesToInsert[0])
-            .expect(HttpStatus.NOT_FOUND);
+            .expect(HttpStatus.BAD_REQUEST);
         });
       });
     });
@@ -193,10 +196,6 @@ describe('JoggingController (e2e)', () => {
         });
       });
     });
-  });
-
-  afterEach(async () => {
-    await getConnection().synchronize(true);
   });
 
   afterAll(async () => {
